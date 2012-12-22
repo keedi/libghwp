@@ -285,21 +285,17 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 					case 7:
 					case 8:
 					{
-						gint _tmp13_;
-						_tmp13_ = i;
-						i = _tmp13_ + 14;
+						i = i + 14;
 						break;
 					}
 					case 9:
 					{
-						gint _tmp14_;
 						const gchar* _tmp15_;
 						gunichar _tmp16_;
 						gchar* _tmp17_ = NULL;
 						gchar* _tmp18_;
 						gchar* _tmp19_;
-						_tmp14_ = i;
-						i = _tmp14_ + 14;
+						i = i + 14;
 						_tmp15_ = text;
 						_tmp16_ = ch;
 						_tmp17_ = g_unichar_to_string (_tmp16_);
@@ -317,9 +313,7 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 					case 11:
 					case 12:
 					{
-						gint _tmp20_;
-						_tmp20_ = i;
-						i = _tmp20_ + 14;
+						i = i + 14;
 						break;
 					}
 					case 13:
@@ -337,9 +331,7 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 					case 22:
 					case 23:
 					{
-						gint _tmp21_;
-						_tmp21_ = i;
-						i = _tmp21_ + 14;
+						i = i + 14;
 						break;
 					}
 					case 24:
@@ -355,16 +347,8 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 					}
 					default:
 					{
-						const gchar* _tmp22_;
-						gunichar _tmp23_;
-						gchar* _tmp24_ = NULL;
-						gchar* _tmp25_;
-						gchar* _tmp26_;
-						_tmp22_ = text;
-						_tmp23_ = ch;
-						_tmp24_ = g_unichar_to_string (_tmp23_);
-						_tmp25_ = _tmp24_;
-						_tmp26_ = g_strconcat (_tmp22_, _tmp25_, NULL);
+						gchar* _tmp25_ = g_unichar_to_string (ch);
+						gchar* _tmp26_ = g_strconcat (text, _tmp25_, NULL);
 						_g_free0 (text);
 						text = _tmp26_;
 						_g_free0 (_tmp25_);
@@ -379,7 +363,8 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 }
 
 
-static void ghwp_document_parse_body_text (GHWPDocument* self) {
+static void ghwp_document_parse_body_text (GHWPDocument* self)
+{
 	guint curr_lv;
 	guint prev_lv;
 	g_return_if_fail (self != NULL);
@@ -436,7 +421,6 @@ static void ghwp_document_parse_body_text (GHWPDocument* self) {
 					guint16 _tmp23_;
 					GHWPContext* _tmp24_;
 					guint16 _tmp25_;
-					guint _tmp60_;
 					_tmp14_ = context;
 					_tmp15_ = ghwp_context_pull (_tmp14_);
 					if (!_tmp15_) {
@@ -573,53 +557,30 @@ static void ghwp_document_parse_body_text (GHWPDocument* self) {
 							break;
 						}
 						case GHWP_TAG_PARA_CHAR_SHAPE:
-						{
 							break;
-						}
 						case GHWP_TAG_PARA_LINE_SEG:
-						{
 							break;
-						}
 						case GHWP_TAG_CTRL_HEADER:
-						{
 							break;
-						}
 						case GHWP_TAG_PAGE_DEF:
-						{
 							break;
-						}
 						case GHWP_TAG_FOOTNOTE_SHAPE:
-						{
 							break;
-						}
 						case GHWP_TAG_PAGE_BORDER_FILL:
-						{
 							break;
-						}
 						case GHWP_TAG_LIST_HEADER:
-						{
 							break;
-						}
 						case GHWP_TAG_EQEDIT:
-						{
 							break;
-						}
 						default:
 						{
-							FILE* _tmp56_;
-							GHWPContext* _tmp57_;
-							guint16 _tmp58_;
 							const gchar* _tmp59_;
-							_tmp56_ = stderr;
-							_tmp57_ = context;
-							_tmp58_ = _tmp57_->tag_id;
-							_tmp59_ = GHWP_TAG_NAMES[_tmp58_];
-							fprintf (_tmp56_, "%s: not implemented\n", _tmp59_);
+							_tmp59_ = GHWP_TAG_NAMES[context->tag_id];
+							fprintf (stderr, "%s: not implemented\n", _tmp59_);
 							break;
 						}
 					}
-					_tmp60_ = curr_lv;
-					prev_lv = _tmp60_;
+					prev_lv = curr_lv;
 				}
 				_g_object_unref0 (context);
 				_g_object_unref0 (section_stream);
@@ -782,7 +743,8 @@ static void ghwp_document_make_pages (GHWPDocument* self) {
 }
 
 
-static void ghwp_document_parse_prv_text (GHWPDocument* self) {
+static void ghwp_document_parse_prv_text (GHWPDocument* self)
+{
 	GHWPFile* _tmp0_;
 	GInputStream* _tmp1_;
 	GsfInputStream* _tmp2_;
