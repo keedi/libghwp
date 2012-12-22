@@ -66,16 +66,12 @@ static gpointer _g_object_ref0 (gpointer self) {
 }
 
 
-void text_p_add_textspan (TextP* self, TextSpan* textspan) {
-	GArray* _tmp0_;
-	TextSpan* _tmp1_;
-	TextSpan* _tmp2_;
+void text_p_add_textspan (TextP* self, TextSpan* textspan)
+{
 	g_return_if_fail (self != NULL);
 	g_return_if_fail (textspan != NULL);
-	_tmp0_ = self->textspans;
-	_tmp1_ = textspan;
-	_tmp2_ = _g_object_ref0 (_tmp1_);
-	g_array_append_val (_tmp0_, _tmp2_);
+	TextSpan* _tmp2_ = _g_object_ref0 (textspan);
+	g_array_append_val (self->textspans, _tmp2_);
 }
 
 
@@ -138,16 +134,12 @@ static void text_span_finalize (GObject* obj)
 
 GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error)
 {
-	GHWPDocument * self = NULL;
-	const gchar* _tmp0_;
-	GHWPFile* _tmp1_;
-	GHWPFile* _tmp2_;
-	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (uri != NULL, NULL);
-	self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT, NULL);
-	_tmp0_ = uri;
-	_tmp1_ = ghwp_file_new_from_uri (_tmp0_, &_inner_error_);
-	_tmp2_ = _tmp1_;
+	GError * _inner_error_ = NULL;
+	GHWPDocument * self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT,
+	                                                    NULL);
+	GHWPFile* _tmp2_ = ghwp_file_new_from_uri (uri, &_inner_error_);
+
 	if (_inner_error_ != NULL) {
 		g_propagate_error (error, _inner_error_);
 		_g_object_unref0 (self);
@@ -185,7 +177,8 @@ ghwp_document_new_from_filename (const gchar* filename, GError** error)
 }
 
 
-static void ghwp_document_parse (GHWPDocument* self) {
+static void ghwp_document_parse (GHWPDocument* self)
+{
 	g_return_if_fail (self != NULL);
 	ghwp_document_parse_doc_info (self);
 	ghwp_document_parse_body_text (self);
@@ -194,7 +187,8 @@ static void ghwp_document_parse (GHWPDocument* self) {
 }
 
 
-guint ghwp_document_get_n_pages (GHWPDocument* self) {
+guint ghwp_document_get_n_pages (GHWPDocument* self)
+{
     g_return_val_if_fail (self != NULL, 0U);
     return self->pages->len;
 }
@@ -202,39 +196,19 @@ guint ghwp_document_get_n_pages (GHWPDocument* self) {
 
 GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page)
 {
-	GHWPPage* result = NULL;
-	GArray* _tmp0_;
-	gint _tmp1_;
-	GHWPPage* _tmp2_ = NULL;
-	GHWPPage* _tmp3_;
 	g_return_val_if_fail (self != NULL, NULL);
-	_tmp0_ = self->pages;
-	_tmp1_ = n_page;
-	_tmp2_ = g_array_index (_tmp0_, GHWPPage*, (guint) _tmp1_);
-	_tmp3_ = _g_object_ref0 (_tmp2_);
-	result = _tmp3_;
-	return result;
+	GHWPPage* page = g_array_index (self->pages, GHWPPage*, (guint) n_page);
+	return _g_object_ref0 (page);
 }
 
 
-static void ghwp_document_parse_doc_info (GHWPDocument* self) {
-	GHWPFile* _tmp0_;
-	GInputStream* _tmp1_;
-	GHWPContext* _tmp2_;
-	GHWPContext* context;
+static void ghwp_document_parse_doc_info (GHWPDocument* self)
+{
 	g_return_if_fail (self != NULL);
-	_tmp0_ = self->ghwp_file;
-	_tmp1_ = _tmp0_->doc_info_stream;
-	_tmp2_ = ghwp_context_new (_tmp1_);
-	context = _tmp2_;
-	while (TRUE) {
-		GHWPContext* _tmp3_;
-		gboolean _tmp4_ = FALSE;
-		_tmp3_ = context;
-		_tmp4_ = ghwp_context_pull (_tmp3_);
-		if (!_tmp4_) {
-			break;
-		}
+	GInputStream* stream = self->ghwp_file->doc_info_stream;
+	GHWPContext* context = ghwp_context_new (stream);
+	while (ghwp_context_pull (context)) {
+        /* TODO */
 	}
 	_g_object_unref0 (context);
 }
@@ -985,12 +959,8 @@ static void ghwp_document_class_init (GHWPDocumentClass * klass) {
 
 
 static void ghwp_document_init (GHWPDocument * self) {
-	GArray* _tmp0_;
-	GArray* _tmp1_;
-	_tmp0_ = g_array_new (TRUE, TRUE, sizeof (TextP*));
-	self->office_text = _tmp0_;
-	_tmp1_ = g_array_new (TRUE, TRUE, sizeof (GHWPPage*));
-	self->pages = _tmp1_;
+	self->office_text = g_array_new (TRUE, TRUE, sizeof (TextP*));
+	self->pages = g_array_new (TRUE, TRUE, sizeof (GHWPPage*));
 }
 
 

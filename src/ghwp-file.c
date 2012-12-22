@@ -578,32 +578,12 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 	guchar* _tmp3_ = NULL;
 	guchar* buf;
 	gint buf_length1;
-	gchar* _tmp5_;
-	guchar _tmp6_;
-	guchar _tmp7_;
-	guchar _tmp8_;
-	guchar _tmp9_;
-	guchar _tmp10_;
-	guchar _tmp11_;
-	guchar _tmp12_;
-	guchar _tmp13_;
 	guint32 prop;
-	guint32 _tmp14_;
-	guint32 _tmp15_;
-	guint32 _tmp16_;
-	guint32 _tmp17_;
-	guint32 _tmp18_;
-	guint32 _tmp19_;
-	guint32 _tmp20_;
-	guint32 _tmp21_;
-	guint32 _tmp22_;
-	guint32 _tmp23_;
-	guint32 _tmp24_;
-	guint32 _tmp25_;
 	GError * _inner_error_ = NULL;
 	g_return_if_fail (self != NULL);
 	_tmp0_ = self->file_header_stream;
-	_tmp1_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp0_, GSF_TYPE_INPUT_STREAM, GsfInputStream));
+	_tmp1_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp0_,
+	                         GSF_TYPE_INPUT_STREAM, GsfInputStream));
 	gis = _tmp1_;
 	_tmp2_ = gsf_input_stream_size (gis);
 	size = _tmp2_;
@@ -611,7 +591,8 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 	buf = _tmp3_;
 	buf_length1 = size;
 	{
-		g_input_stream_read ((GInputStream*) gis, buf, (gsize) buf_length1, NULL, &_inner_error_);
+		g_input_stream_read ((GInputStream*) gis, buf,
+		                     (gsize) buf_length1, NULL, &_inner_error_);
 		if (_inner_error_ != NULL) {
 			goto __catch2_g_error;
 		}
@@ -635,67 +616,40 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 		g_clear_error (&_inner_error_);
 		return;
 	}
-	_tmp5_ = g_strdup ((const gchar*) (buf + 0));
 	_g_free0 (self->header.signature);
-	self->header.signature = _tmp5_;
-	_tmp6_ = buf[35];
-	_tmp7_ = buf[34];
-	_tmp8_ = buf[33];
-	_tmp9_ = buf[32];
-	self->header.version = (guint32) ((((_tmp6_ << 24) | (_tmp7_ << 16)) | (_tmp8_ << 8)) | _tmp9_);
-	_tmp10_ = buf[39];
-	_tmp11_ = buf[38];
-	_tmp12_ = buf[37];
-	_tmp13_ = buf[36];
-	prop = (guint32) ((((_tmp10_ << 24) | (_tmp11_ << 16)) | (_tmp12_ << 8)) | _tmp13_);
-	_tmp14_ = prop;
-	if ((_tmp14_ & (1 << 0)) == ((guint32) 1)) {
+	self->header.signature = g_strdup ((const gchar*) (buf + 0));
+	self->header.version = (guint32) (buf[35] << 24 |
+	                                  buf[34] << 16 |
+	                                  buf[33] << 8  |
+	                                  buf[32]);
+	prop = (guint32) (buf[39] << 24 |
+	                  buf[38] << 16 |
+	                  buf[37] << 8  |
+	                  buf[36]);
+	if ((prop & (1 << 0)) == ((guint32) 1))
 		self->header.is_compress = TRUE;
-	}
-	_tmp15_ = prop;
-	if ((_tmp15_ & (1 << 1)) == ((guint32) 1)) {
+	if ((prop & (1 << 1)) == ((guint32) 1))
 		self->header.is_encrypt = TRUE;
-	}
-	_tmp16_ = prop;
-	if ((_tmp16_ & (1 << 2)) == ((guint32) 1)) {
+	if ((prop & (1 << 2)) == ((guint32) 1))
 		self->header.is_distribute = TRUE;
-	}
-	_tmp17_ = prop;
-	if ((_tmp17_ & (1 << 3)) == ((guint32) 1)) {
+	if ((prop & (1 << 3)) == ((guint32) 1))
 		self->header.is_script = TRUE;
-	}
-	_tmp18_ = prop;
-	if ((_tmp18_ & (1 << 4)) == ((guint32) 1)) {
+	if ((prop & (1 << 4)) == ((guint32) 1))
 		self->header.is_drm = TRUE;
-	}
-	_tmp19_ = prop;
-	if ((_tmp19_ & (1 << 5)) == ((guint32) 1)) {
+	if ((prop & (1 << 5)) == ((guint32) 1))
 		self->header.is_xml_template = TRUE;
-	}
-	_tmp20_ = prop;
-	if ((_tmp20_ & (1 << 6)) == ((guint32) 1)) {
+	if ((prop & (1 << 6)) == ((guint32) 1))
 		self->header.is_history = TRUE;
-	}
-	_tmp21_ = prop;
-	if ((_tmp21_ & (1 << 7)) == ((guint32) 1)) {
+	if ((prop & (1 << 7)) == ((guint32) 1))
 		self->header.is_sign = TRUE;
-	}
-	_tmp22_ = prop;
-	if ((_tmp22_ & (1 << 8)) == ((guint32) 1)) {
+	if ((prop & (1 << 8)) == ((guint32) 1))
 		self->header.is_certificate_encrypt = TRUE;
-	}
-	_tmp23_ = prop;
-	if ((_tmp23_ & (1 << 9)) == ((guint32) 1)) {
+	if ((prop & (1 << 9)) == ((guint32) 1))
 		self->header.is_sign_spare = TRUE;
-	}
-	_tmp24_ = prop;
-	if ((_tmp24_ & (1 << 10)) == ((guint32) 1)) {
+	if ((prop & (1 << 10)) == ((guint32) 1))
 		self->header.is_certificate_drm = TRUE;
-	}
-	_tmp25_ = prop;
-	if ((_tmp25_ & (1 << 11)) == ((guint32) 1)) {
+	if ((prop & (1 << 11)) == ((guint32) 1))
 		self->header.is_ccl = TRUE;
-	}
 	buf = (g_free (buf), NULL);
 	_g_object_unref0 (gis);
 }
@@ -703,58 +657,27 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 
 GHWPFile* ghwp_file_new (void)
 {
-	GHWPFile * self = NULL;
-	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
-	return self;
+	return (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
 }
 
 
-void ghwp_file_header_copy (const GHWPFileHeader* self, GHWPFileHeader* dest) {
-	const gchar* _tmp0_;
-	gchar* _tmp1_;
-	guint32 _tmp2_;
-	gboolean _tmp3_;
-	gboolean _tmp4_;
-	gboolean _tmp5_;
-	gboolean _tmp6_;
-	gboolean _tmp7_;
-	gboolean _tmp8_;
-	gboolean _tmp9_;
-	gboolean _tmp10_;
-	gboolean _tmp11_;
-	gboolean _tmp12_;
-	gboolean _tmp13_;
-	gboolean _tmp14_;
-	_tmp0_ = (*self).signature;
-	_tmp1_ = g_strdup (_tmp0_);
+void ghwp_file_header_copy (const GHWPFileHeader *self, GHWPFileHeader *dest)
+{
 	_g_free0 ((*dest).signature);
-	(*dest).signature = _tmp1_;
-	_tmp2_ = (*self).version;
-	(*dest).version = _tmp2_;
-	_tmp3_ = (*self).is_compress;
-	(*dest).is_compress = _tmp3_;
-	_tmp4_ = (*self).is_encrypt;
-	(*dest).is_encrypt = _tmp4_;
-	_tmp5_ = (*self).is_distribute;
-	(*dest).is_distribute = _tmp5_;
-	_tmp6_ = (*self).is_script;
-	(*dest).is_script = _tmp6_;
-	_tmp7_ = (*self).is_drm;
-	(*dest).is_drm = _tmp7_;
-	_tmp8_ = (*self).is_xml_template;
-	(*dest).is_xml_template = _tmp8_;
-	_tmp9_ = (*self).is_history;
-	(*dest).is_history = _tmp9_;
-	_tmp10_ = (*self).is_sign;
-	(*dest).is_sign = _tmp10_;
-	_tmp11_ = (*self).is_certificate_encrypt;
-	(*dest).is_certificate_encrypt = _tmp11_;
-	_tmp12_ = (*self).is_sign_spare;
-	(*dest).is_sign_spare = _tmp12_;
-	_tmp13_ = (*self).is_certificate_drm;
-	(*dest).is_certificate_drm = _tmp13_;
-	_tmp14_ = (*self).is_ccl;
-	(*dest).is_ccl = _tmp14_;
+	(*dest).signature = g_strdup ((*self).signature);
+	(*dest).version = (*self).version;
+	(*dest).is_compress = (*self).is_compress;
+	(*dest).is_encrypt = (*self).is_encrypt;
+	(*dest).is_distribute = (*self).is_distribute;
+	(*dest).is_script = (*self).is_script;
+	(*dest).is_drm = (*self).is_drm;
+	(*dest).is_xml_template = (*self).is_xml_template;
+	(*dest).is_history = (*self).is_history;
+	(*dest).is_sign = (*self).is_sign;
+	(*dest).is_certificate_encrypt = (*self).is_certificate_encrypt;
+	(*dest).is_sign_spare = (*self).is_sign_spare;
+	(*dest).is_certificate_drm = (*self).is_certificate_drm;
+	(*dest).is_ccl = (*self).is_ccl;
 }
 
 
@@ -763,9 +686,9 @@ void ghwp_file_header_destroy (GHWPFileHeader* self) {
 }
 
 
-GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self) {
-	GHWPFileHeader* dup;
-	dup = g_new0 (GHWPFileHeader, 1);
+GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self)
+{
+	GHWPFileHeader* dup = g_new0 (GHWPFileHeader, 1);
 	ghwp_file_header_copy (self, dup);
 	return dup;
 }
