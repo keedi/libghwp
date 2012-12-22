@@ -22,111 +22,50 @@
 
 #include <glib.h>
 #include <glib-object.h>
-#include <gio/gio.h>
+
 #include <gsf/gsf-input-impl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <gsf/gsf-infile-msole.h>
 #include <gsf/gsf-input-stdio.h>
 #include <gsf/gsf-infile-impl.h>
 #include <stdio.h>
 
 #include "gsf-input-stream.h"
+#include "ghwp-file.h"
+
+G_DEFINE_TYPE (GHWPFile, ghwp_file, G_TYPE_OBJECT);
+G_DEFINE_TYPE (GHWPFileHeader, ghwp_file_header, G_TYPE_OBJECT);
 
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
-
-#define GHWP_TYPE_GHWP_FILE (ghwp_file_get_type ())
-#define GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_GHWP_FILE, GHWPFile))
-#define GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
-#define GHWP_IS_GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_GHWP_FILE))
-#define GHWP_IS_GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_GHWP_FILE))
-#define GHWP_FILE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
-
-typedef struct _GHWPFile GHWPFile;
-typedef struct _GHWPFileClass GHWPFileClass;
-typedef struct _GHWPFilePrivate GHWPFilePrivate;
-
-#define GHWP_FILE_TYPE_HEADER (ghwp_file_header_get_type ())
-typedef struct _GHWPFileHeader GHWPFileHeader;
 #define _g_array_free0(var) ((var == NULL) ? NULL : (var = (g_array_free (var, TRUE), NULL)))
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 #define _g_free0(var) (var = (g_free (var), NULL))
 
-
-struct _GHWPFileHeader {
-	gchar* signature;
-	guint32 version;
-	gboolean is_compress;
-	gboolean is_encrypt;
-	gboolean is_distribute;
-	gboolean is_script;
-	gboolean is_drm;
-	gboolean is_xml_template;
-	gboolean is_history;
-	gboolean is_sign;
-	gboolean is_certificate_encrypt;
-	gboolean is_sign_spare;
-	gboolean is_certificate_drm;
-	gboolean is_ccl;
-};
-
-struct _GHWPFile {
-	GObject parent_instance;
-	GHWPFilePrivate * priv;
-	GHWPFileHeader header;
-	GInputStream* prv_text_stream;
-	GInputStream* prv_image_stream;
-	GInputStream* file_header_stream;
-	GInputStream* doc_info_stream;
-	GArray* section_streams;
-	GInputStream* summary_info_stream;
-};
-
-struct _GHWPFileClass {
-	GObjectClass parent_class;
-};
-
-struct _GHWPFilePrivate {
-	GsfInfileMSOle* olefile;
-	GInputStream* section_stream;
-};
-
-static gpointer ghwp_file_parent_class = NULL;
-
-GType ghwp_file_get_type (void) G_GNUC_CONST;
-GType ghwp_file_header_get_type (void) G_GNUC_CONST;
 GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self);
 void ghwp_file_header_free (GHWPFileHeader* self);
 void ghwp_file_header_copy (const GHWPFileHeader* self, GHWPFileHeader* dest);
 void ghwp_file_header_destroy (GHWPFileHeader* self);
-#define GHWP_FILE_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GHWP_TYPE_GHWP_FILE, GHWPFilePrivate))
-enum  {
-	GHWP_FILE_DUMMY_PROPERTY
-};
-GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error);
-GHWPFile* ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GError** error);
-static void ghwp_file_init (GHWPFile* self);
-GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error);
-GHWPFile* ghwp_file_construct_from_filename (GType object_type, const gchar* filename, GError** error);
+#define GHWP_FILE_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GHWP_TYPE_FILE, GHWPFilePrivate))
+
+static void ghwp_file_make_stream (GHWPFile* self);
 static void ghwp_file_decode_file_header (GHWPFile* self);
-GHWPFile* ghwp_file_new (void);
-GHWPFile* ghwp_file_construct (GType object_type);
 static void ghwp_file_finalize (GObject* obj);
 
-
-static gpointer _g_object_ref0 (gpointer self) {
+static gpointer _g_object_ref0 (gpointer self)
+{
 	return self ? g_object_ref (self) : NULL;
 }
 
 
-GHWPFile* ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GError** error) {
+GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error)
+{
 	GHWPFile * self = NULL;
 	const gchar* _tmp0_;
 	gchar* _tmp1_ = NULL;
 	gchar* filename;
 	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (uri != NULL, NULL);
-	self = (GHWPFile*) g_object_new (object_type, NULL);
+	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
 	_tmp0_ = uri;
 	_tmp1_ = g_filename_from_uri (_tmp0_, NULL, &_inner_error_);
 	filename = _tmp1_;
@@ -175,25 +114,21 @@ GHWPFile* ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GEr
 		_g_object_unref0 (self);
 		return NULL;
 	}
-	ghwp_file_init (self);
+	ghwp_file_make_stream (self);
 	_g_free0 (filename);
 	return self;
 }
 
 
-GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error) {
-	return ghwp_file_construct_from_uri (GHWP_TYPE_GHWP_FILE, uri, error);
-}
-
-
-GHWPFile* ghwp_file_construct_from_filename (GType object_type, const gchar* filename, GError** error) {
+GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error)
+{
 	GHWPFile * self = NULL;
 	const gchar* _tmp0_;
 	GFile* _tmp1_ = NULL;
 	GFile* file;
 	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (filename != NULL, NULL);
-	self = (GHWPFile*) g_object_new (object_type, NULL);
+	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
 	_tmp0_ = filename;
 	_tmp1_ = g_file_new_for_path (_tmp0_);
 	file = _tmp1_;
@@ -246,18 +181,13 @@ GHWPFile* ghwp_file_construct_from_filename (GType object_type, const gchar* fil
 		_g_object_unref0 (self);
 		return NULL;
 	}
-	ghwp_file_init (self);
+	ghwp_file_make_stream (self);
 	_g_object_unref0 (file);
 	return self;
 }
 
 
-GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error) {
-	return ghwp_file_construct_from_filename (GHWP_TYPE_GHWP_FILE, filename, error);
-}
-
-
-static void ghwp_file_init (GHWPFile* self) {
+static void ghwp_file_make_stream (GHWPFile* self) {
 	GsfInfileMSOle* _tmp0_;
 	gint _tmp1_ = 0;
 	gint n_children;
@@ -771,15 +701,11 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 }
 
 
-GHWPFile* ghwp_file_construct (GType object_type) {
+GHWPFile* ghwp_file_new (void)
+{
 	GHWPFile * self = NULL;
-	self = (GHWPFile*) g_object_new (object_type, NULL);
+	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
 	return self;
-}
-
-
-GHWPFile* ghwp_file_new (void) {
-	return ghwp_file_construct (GHWP_TYPE_GHWP_FILE);
 }
 
 
@@ -851,17 +777,6 @@ void ghwp_file_header_free (GHWPFileHeader* self) {
 }
 
 
-GType ghwp_file_header_get_type (void) {
-	static volatile gsize ghwp_file_header_type_id__volatile = 0;
-	if (g_once_init_enter (&ghwp_file_header_type_id__volatile)) {
-		GType ghwp_file_header_type_id;
-		ghwp_file_header_type_id = g_boxed_type_register_static ("GHWPFileHeader", (GBoxedCopyFunc) ghwp_file_header_dup, (GBoxedFreeFunc) ghwp_file_header_free);
-		g_once_init_leave (&ghwp_file_header_type_id__volatile, ghwp_file_header_type_id);
-	}
-	return ghwp_file_header_type_id__volatile;
-}
-
-
 static void ghwp_file_class_init (GHWPFileClass * klass) {
 	ghwp_file_parent_class = g_type_class_peek_parent (klass);
 	g_type_class_add_private (klass, sizeof (GHWPFilePrivate));
@@ -869,7 +784,7 @@ static void ghwp_file_class_init (GHWPFileClass * klass) {
 }
 
 
-static void ghwp_file_instance_init (GHWPFile * self) {
+static void ghwp_file_init (GHWPFile * self) {
 	GHWPFileHeader _tmp0_ = {0};
 	self->priv = GHWP_FILE_GET_PRIVATE (self);
 	memset (&_tmp0_, 0, sizeof (GHWPFileHeader));
@@ -879,7 +794,7 @@ static void ghwp_file_instance_init (GHWPFile * self) {
 
 static void ghwp_file_finalize (GObject* obj) {
 	GHWPFile * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, GHWP_TYPE_GHWP_FILE, GHWPFile);
+	self = G_TYPE_CHECK_INSTANCE_CAST (obj, GHWP_TYPE_FILE, GHWPFile);
 	_g_object_unref0 (self->priv->olefile);
 	ghwp_file_header_destroy (&self->header);
 	_g_object_unref0 (self->prv_text_stream);
@@ -892,14 +807,10 @@ static void ghwp_file_finalize (GObject* obj) {
 	G_OBJECT_CLASS (ghwp_file_parent_class)->finalize (obj);
 }
 
+static void ghwp_file_header_class_init (GHWPFileHeaderClass * klass)
+{
+}
 
-GType ghwp_file_get_type (void) {
-	static volatile gsize ghwp_file_type_id__volatile = 0;
-	if (g_once_init_enter (&ghwp_file_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (GHWPFileClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) ghwp_file_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (GHWPFile), 0, (GInstanceInitFunc) ghwp_file_instance_init, NULL };
-		GType ghwp_file_type_id;
-		ghwp_file_type_id = g_type_register_static (G_TYPE_OBJECT, "GHWPFile", &g_define_type_info, 0);
-		g_once_init_leave (&ghwp_file_type_id__volatile, ghwp_file_type_id);
-	}
-	return ghwp_file_type_id__volatile;
+static void ghwp_file_header_init (GHWPFileHeader * self)
+{
 }

@@ -34,6 +34,20 @@
 #include <gsf/gsf-input-impl.h>
 #include <cairo.h>
 
+#include "ghwp-document.h"
+#include "gsf-input-stream.h"
+
+G_DEFINE_TYPE (GHWPDocument, ghwp_document, G_TYPE_OBJECT);
+G_DEFINE_TYPE (TextSpan, text_span, G_TYPE_OBJECT);
+
+static void ghwp_document_parse (GHWPDocument* self);
+static void ghwp_document_parse_doc_info (GHWPDocument* self);
+static void ghwp_document_parse_body_text (GHWPDocument* self);
+static void ghwp_document_parse_prv_text (GHWPDocument* self);
+static void ghwp_document_parse_summary_info (GHWPDocument* self);
+static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* raw, int raw_length1);
+static void ghwp_document_make_pages (GHWPDocument* self);
+static void ghwp_document_finalize (GObject* obj);
 
 #define TYPE_TEXT_P (text_p_get_type ())
 #define TEXT_P(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_TEXT_P, TextP))
@@ -46,54 +60,9 @@ typedef struct _TextP TextP;
 typedef struct _TextPClass TextPClass;
 typedef struct _TextPPrivate TextPPrivate;
 
-#define TYPE_TEXT_SPAN (text_span_get_type ())
-#define TEXT_SPAN(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_TEXT_SPAN, TextSpan))
-#define TEXT_SPAN_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_TEXT_SPAN, TextSpanClass))
-#define IS_TEXT_SPAN(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_TEXT_SPAN))
-#define IS_TEXT_SPAN_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_TEXT_SPAN))
-#define TEXT_SPAN_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_TEXT_SPAN, TextSpanClass))
-
-typedef struct _TextSpan TextSpan;
-typedef struct _TextSpanClass TextSpanClass;
 #define _g_array_free0(var) ((var == NULL) ? NULL : (var = (g_array_free (var, TRUE), NULL)))
-typedef struct _TextSpanPrivate TextSpanPrivate;
 #define _g_free0(var) (var = (g_free (var), NULL))
-
-#define GHWP_TYPE_DOCUMENT (ghwp_document_get_type ())
-#define GHWP_DOCUMENT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_DOCUMENT, GHWPDocument))
-#define GHWP_DOCUMENT_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_DOCUMENT, GHWPDocumentClass))
-#define GHWP_IS_DOCUMENT(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_DOCUMENT))
-#define GHWP_IS_DOCUMENT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_DOCUMENT))
-#define GHWP_DOCUMENT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_DOCUMENT, GHWPDocumentClass))
-
-typedef struct _GHWPDocument GHWPDocument;
-typedef struct _GHWPDocumentClass GHWPDocumentClass;
-typedef struct _GHWPDocumentPrivate GHWPDocumentPrivate;
-
-#define GHWP_TYPE_GHWP_FILE (ghwp_file_get_type ())
-#define GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_GHWP_FILE, GHWPFile))
-#define GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
-#define GHWP_IS_GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_GHWP_FILE))
-#define GHWP_IS_GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_GHWP_FILE))
-#define GHWP_FILE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
-
-typedef struct _GHWPFile GHWPFile;
-typedef struct _GHWPFileClass GHWPFileClass;
-
-#define GHWP_TYPE_PAGE (ghwp_page_get_type ())
-#define GHWP_PAGE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_PAGE, GHWPPage))
-#define GHWP_PAGE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_PAGE, GHWPPageClass))
-#define GHWP_IS_PAGE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_PAGE))
-#define GHWP_IS_PAGE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_PAGE))
-#define GHWP_PAGE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_PAGE, GHWPPageClass))
-
-typedef struct _GHWPPage GHWPPage;
-typedef struct _GHWPPageClass GHWPPageClass;
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
-typedef struct _GHWPFilePrivate GHWPFilePrivate;
-
-#define GHWP_FILE_TYPE_HEADER (ghwp_file_header_get_type ())
-typedef struct _GHWPFileHeader GHWPFileHeader;
 
 #define GHWP_TYPE_CONTEXT (ghwp_context_get_type ())
 #define GHWP_CONTEXT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_CONTEXT, GHWPContext))
@@ -105,17 +74,7 @@ typedef struct _GHWPFileHeader GHWPFileHeader;
 typedef struct _GHWPContext GHWPContext;
 typedef struct _GHWPContextClass GHWPContextClass;
 typedef struct _GHWPContextPrivate GHWPContextPrivate;
-typedef struct _GHWPPagePrivate GHWPPagePrivate;
 
-#define TYPE_GSF_INPUT_STREAM (gsf_input_stream_get_type ())
-#define GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStream))
-#define GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
-#define IS_GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_GSF_INPUT_STREAM))
-#define IS_GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_GSF_INPUT_STREAM))
-#define GSF_INPUT_STREAM_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
-
-typedef struct _GsfInputStream GsfInputStream;
-typedef struct _GsfInputStreamClass GsfInputStreamClass;
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 
 struct _TextP {
@@ -125,63 +84,6 @@ struct _TextP {
 };
 
 struct _TextPClass {
-	GObjectClass parent_class;
-};
-
-struct _TextSpan {
-	GObject parent_instance;
-	TextSpanPrivate * priv;
-	gchar* text;
-};
-
-struct _TextSpanClass {
-	GObjectClass parent_class;
-};
-
-struct _GHWPDocument {
-	GObject parent_instance;
-	GHWPDocumentPrivate * priv;
-	GHWPFile* ghwp_file;
-	gchar* prv_text;
-	GArray* office_text;
-	GArray* pages;
-	GsfDocMetaData* summary_info;
-};
-
-struct _GHWPDocumentClass {
-	GObjectClass parent_class;
-};
-
-struct _GHWPFileHeader {
-	gchar* signature;
-	guint32 version;
-	gboolean is_compress;
-	gboolean is_encrypt;
-	gboolean is_distribute;
-	gboolean is_script;
-	gboolean is_drm;
-	gboolean is_xml_template;
-	gboolean is_history;
-	gboolean is_sign;
-	gboolean is_certificate_encrypt;
-	gboolean is_sign_spare;
-	gboolean is_certificate_drm;
-	gboolean is_ccl;
-};
-
-struct _GHWPFile {
-	GObject parent_instance;
-	GHWPFilePrivate * priv;
-	GHWPFileHeader header;
-	GInputStream* prv_text_stream;
-	GInputStream* prv_image_stream;
-	GInputStream* file_header_stream;
-	GInputStream* doc_info_stream;
-	GArray* section_streams;
-	GInputStream* summary_info_stream;
-};
-
-struct _GHWPFileClass {
 	GObjectClass parent_class;
 };
 
@@ -199,68 +101,25 @@ struct _GHWPContextClass {
 	GObjectClass parent_class;
 };
 
-struct _GHWPPage {
-	GObject parent_instance;
-	GHWPPagePrivate * priv;
-	GArray* elements;
-};
-
-struct _GHWPPageClass {
-	GObjectClass parent_class;
-};
-
-
 static gpointer text_p_parent_class = NULL;
-static gpointer text_span_parent_class = NULL;
-static gpointer ghwp_document_parent_class = NULL;
-static gpointer ghwp_page_parent_class = NULL;
 
 GType text_p_get_type (void) G_GNUC_CONST;
-GType text_span_get_type (void) G_GNUC_CONST;
+
 enum  {
 	TEXT_P_DUMMY_PROPERTY
 };
+
 void text_p_add_textspan (TextP* self, TextSpan* textspan);
 TextP* text_p_new (void);
-TextP* text_p_construct (GType object_type);
 static void text_p_finalize (GObject* obj);
-enum  {
-	TEXT_SPAN_DUMMY_PROPERTY
-};
-TextSpan* text_span_new (const gchar* text);
-TextSpan* text_span_construct (GType object_type, const gchar* text);
+
+
 static void text_span_finalize (GObject* obj);
-GType ghwp_document_get_type (void) G_GNUC_CONST;
-GType ghwp_file_get_type (void) G_GNUC_CONST;
-GType ghwp_page_get_type (void) G_GNUC_CONST;
-enum  {
-	GHWP_DOCUMENT_DUMMY_PROPERTY
-};
-GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error);
-GHWPDocument* ghwp_document_construct_from_uri (GType object_type, const gchar* uri, GError** error);
-GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error);
-GHWPFile* ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GError** error);
-static void ghwp_document_init (GHWPDocument* self);
-GHWPDocument* ghwp_document_new_from_filename (const gchar* filename, GError** error);
-GHWPDocument* ghwp_document_construct_from_filename (GType object_type, const gchar* filename, GError** error);
-GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error);
-GHWPFile* ghwp_file_construct_from_filename (GType object_type, const gchar* filename, GError** error);
-static void ghwp_document_parse_doc_info (GHWPDocument* self);
-static void ghwp_document_parse_body_text (GHWPDocument* self);
-static void ghwp_document_parse_prv_text (GHWPDocument* self);
-static void ghwp_document_parse_summary_info (GHWPDocument* self);
-guint ghwp_document_get_n_pages (GHWPDocument* self);
-GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page);
-GType ghwp_file_header_get_type (void) G_GNUC_CONST;
-GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self);
-void ghwp_file_header_free (GHWPFileHeader* self);
-void ghwp_file_header_copy (const GHWPFileHeader* self, GHWPFileHeader* dest);
-void ghwp_file_header_destroy (GHWPFileHeader* self);
+
 GHWPContext* ghwp_context_new (GInputStream* stream);
-GHWPContext* ghwp_context_construct (GType object_type, GInputStream* stream);
 GType ghwp_context_get_type (void) G_GNUC_CONST;
 gboolean ghwp_context_pull (GHWPContext* self);
-static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* raw, int raw_length1);
+
 #define GHWP_TAG_PARA_HEADER ((guint16) 66)
 #define GHWP_TAG_PARA_TEXT ((guint16) 67)
 #define GHWP_TAG_PARA_CHAR_SHAPE ((guint16) 68)
@@ -271,21 +130,6 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 #define GHWP_TAG_PAGE_BORDER_FILL ((guint16) 75)
 #define GHWP_TAG_LIST_HEADER ((guint16) 72)
 #define GHWP_TAG_EQEDIT ((guint16) 88)
-static void ghwp_document_make_pages (GHWPDocument* self);
-GHWPPage* ghwp_page_new (void);
-GHWPPage* ghwp_page_construct (GType object_type);
-GType gsf_input_stream_get_type (void) G_GNUC_CONST;
-gssize gsf_input_stream_size (GsfInputStream* self);
-GHWPDocument* ghwp_document_new (void);
-GHWPDocument* ghwp_document_construct (GType object_type);
-static void ghwp_document_finalize (GObject* obj);
-enum  {
-	GHWP_PAGE_DUMMY_PROPERTY
-};
-void ghwp_page_get_size (GHWPPage* self, gdouble* width, gdouble* height);
-gboolean ghwp_page_render (GHWPPage* self, cairo_t* cr);
-static gboolean ghwp_page_draw_page (cairo_t* cr, GArray* elements);
-static void ghwp_page_finalize (GObject* obj);
 
 extern const gchar* GHWP_TAG_NAMES[116];
 
@@ -367,7 +211,7 @@ TextSpan* text_span_construct (GType object_type, const gchar* text) {
 
 
 TextSpan* text_span_new (const gchar* text) {
-	return text_span_construct (TYPE_TEXT_SPAN, text);
+	return text_span_construct (TEXT_TYPE_SPAN, text);
 }
 
 
@@ -377,27 +221,16 @@ static void text_span_class_init (TextSpanClass * klass) {
 }
 
 
-static void text_span_instance_init (TextSpan * self) {
+static void text_span_init (TextSpan * self)
+{
 }
 
 
 static void text_span_finalize (GObject* obj) {
 	TextSpan * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, TYPE_TEXT_SPAN, TextSpan);
+	self = G_TYPE_CHECK_INSTANCE_CAST (obj, TEXT_TYPE_SPAN, TextSpan);
 	_g_free0 (self->text);
 	G_OBJECT_CLASS (text_span_parent_class)->finalize (obj);
-}
-
-
-GType text_span_get_type (void) {
-	static volatile gsize text_span_type_id__volatile = 0;
-	if (g_once_init_enter (&text_span_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (TextSpanClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) text_span_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (TextSpan), 0, (GInstanceInitFunc) text_span_instance_init, NULL };
-		GType text_span_type_id;
-		text_span_type_id = g_type_register_static (G_TYPE_OBJECT, "TextSpan", &g_define_type_info, 0);
-		g_once_init_leave (&text_span_type_id__volatile, text_span_type_id);
-	}
-	return text_span_type_id__volatile;
 }
 
 
@@ -419,7 +252,7 @@ GHWPDocument* ghwp_document_construct_from_uri (GType object_type, const gchar* 
 	}
 	_g_object_unref0 (self->ghwp_file);
 	self->ghwp_file = _tmp2_;
-	ghwp_document_init (self);
+	ghwp_document_parse (self);
 	return self;
 }
 
@@ -447,7 +280,7 @@ GHWPDocument* ghwp_document_construct_from_filename (GType object_type, const gc
 	}
 	_g_object_unref0 (self->ghwp_file);
 	self->ghwp_file = _tmp2_;
-	ghwp_document_init (self);
+	ghwp_document_parse (self);
 	return self;
 }
 
@@ -457,7 +290,7 @@ GHWPDocument* ghwp_document_new_from_filename (const gchar* filename, GError** e
 }
 
 
-static void ghwp_document_init (GHWPDocument* self) {
+static void ghwp_document_parse (GHWPDocument* self) {
 	g_return_if_fail (self != NULL);
 	ghwp_document_parse_doc_info (self);
 	ghwp_document_parse_body_text (self);
@@ -472,7 +305,8 @@ guint ghwp_document_get_n_pages (GHWPDocument* self) {
 }
 
 
-GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page) {
+GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page)
+{
 	GHWPPage* result = NULL;
 	GArray* _tmp0_;
 	gint _tmp1_;
@@ -1095,7 +929,7 @@ static void ghwp_document_parse_prv_text (GHWPDocument* self) {
 	g_return_if_fail (self != NULL);
 	_tmp0_ = self->ghwp_file;
 	_tmp1_ = _tmp0_->prv_text_stream;
-	_tmp2_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp1_, TYPE_GSF_INPUT_STREAM, GsfInputStream));
+	_tmp2_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp1_, GSF_TYPE_INPUT_STREAM, GsfInputStream));
 	gis = _tmp2_;
 	_tmp3_ = gis;
 	_tmp4_ = gsf_input_stream_size (_tmp3_);
@@ -1175,7 +1009,7 @@ static void ghwp_document_parse_summary_info (GHWPDocument* self) {
 	g_return_if_fail (self != NULL);
 	_tmp0_ = self->ghwp_file;
 	_tmp1_ = _tmp0_->summary_info_stream;
-	_tmp2_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp1_, TYPE_GSF_INPUT_STREAM, GsfInputStream));
+	_tmp2_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp1_, GSF_TYPE_INPUT_STREAM, GsfInputStream));
 	gis = _tmp2_;
 	_tmp3_ = gsf_input_stream_size (gis);
 	size = _tmp3_;
@@ -1261,7 +1095,7 @@ static void ghwp_document_class_init (GHWPDocumentClass * klass) {
 }
 
 
-static void ghwp_document_instance_init (GHWPDocument * self) {
+static void ghwp_document_init (GHWPDocument * self) {
 	GArray* _tmp0_;
 	GArray* _tmp1_;
 	_tmp0_ = g_array_new (TRUE, TRUE, sizeof (TextP*));
@@ -1280,175 +1114,4 @@ static void ghwp_document_finalize (GObject* obj) {
 	_g_array_free0 (self->pages);
 	_g_object_unref0 (self->summary_info);
 	G_OBJECT_CLASS (ghwp_document_parent_class)->finalize (obj);
-}
-
-
-GType ghwp_document_get_type (void) {
-	static volatile gsize ghwp_document_type_id__volatile = 0;
-	if (g_once_init_enter (&ghwp_document_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (GHWPDocumentClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) ghwp_document_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (GHWPDocument), 0, (GInstanceInitFunc) ghwp_document_instance_init, NULL };
-		GType ghwp_document_type_id;
-		ghwp_document_type_id = g_type_register_static (G_TYPE_OBJECT, "GHWPDocument", &g_define_type_info, 0);
-		g_once_init_leave (&ghwp_document_type_id__volatile, ghwp_document_type_id);
-	}
-	return ghwp_document_type_id__volatile;
-}
-
-
-void ghwp_page_get_size (GHWPPage* self,
-                         gdouble*  width,
-                         gdouble*  height)
-{
-    g_return_if_fail (self != NULL);
-    *width  = 595.0;
-    *height = 842.0;
-}
-
-
-gboolean ghwp_page_render (GHWPPage* self, cairo_t* cr) {
-    g_return_val_if_fail (self != NULL, FALSE);
-    g_return_val_if_fail (cr != NULL, FALSE);
-    cairo_save (cr);
-    ghwp_page_draw_page (cr, self->elements);
-    cairo_restore (cr);
-    return TRUE;
-}
-
-
-#include <cairo-ft.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
-static FT_Library ft_lib;
-static FT_Face    ft_face;
-/*한 번만 초기화, 로드*/
-static void
-once_ft_init_and_new (void)
-{
-    static gsize ft_init = 0;
-
-    if (g_once_init_enter (&ft_init)) {
-
-        FT_Init_FreeType (&ft_lib);
-        FT_New_Face (ft_lib,
-                    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-                     0,
-                    &ft_face);
-
-        g_once_init_leave (&ft_init, (gsize)1);
-    }
-}
-
-static gboolean ghwp_page_draw_page (cairo_t* cr, GArray* elements) {
-    g_return_val_if_fail (cr != NULL, FALSE);
-    g_return_val_if_fail (elements != NULL, FALSE);
-
-    gint      i, j;
-    TextSpan *textspan;
-
-    cairo_glyph_t        *glyphs = NULL; /* NULL로 지정하면 자동 할당됨 */
-    int                   num_glyphs;
-    cairo_scaled_font_t  *scaled_font;
-    cairo_font_face_t    *font_face;
-    cairo_matrix_t        font_matrix;
-    cairo_matrix_t        ctm;
-    cairo_font_options_t *font_options;
-    cairo_text_extents_t  extents;
-
-    gchar *ch;
-    double x = 20.0;
-    double y = 40.0;
-
-    once_ft_init_and_new(); /*한 번만 초기화, 로드*/
-
-    font_face = cairo_ft_font_face_create_for_ft_face (ft_face, 0);
-
-    cairo_matrix_init_identity (&font_matrix);
-    cairo_matrix_scale (&font_matrix, 12.0, 12.0);
-    cairo_get_matrix (cr, &ctm);
-
-    font_options = cairo_font_options_create ();
-    cairo_get_font_options (cr, font_options);
-    scaled_font = cairo_scaled_font_create (font_face,
-                                           &font_matrix, &ctm, font_options);
-    cairo_font_options_destroy (font_options);
-    cairo_set_scaled_font(cr, scaled_font); /* 요 문장 없으면 fault 떨어짐 */
-    cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
-
-    for (i = 0; i < elements->len; i++)
-    {
-        textspan = g_array_index (elements, TextSpan*, (guint) i);
-
-        x = 20.0;
-
-        for (j = 0; j < g_utf8_strlen(textspan->text, -1); j++) {
-            ch = g_utf8_substring(textspan->text, j, j+1);
-
-            cairo_scaled_font_text_to_glyphs (scaled_font,
-                                              x, y, /* x, y 좌표 */
-                                              ch, -1,
-                                             &glyphs, &num_glyphs,
-                                              NULL, NULL, NULL);
-            g_free(ch);
-            cairo_glyph_extents(cr, glyphs, num_glyphs, &extents);
-
-            if (x >= 595.0 - extents.x_advance - 20.0) {
-                glyphs[0].x = 20.0;
-                glyphs[0].y += 16.0;
-                x = 20.0 + extents.x_advance;
-                y = y + 16.0;
-            }
-            else {
-                x = x + extents.x_advance;
-            }
-
-            cairo_show_glyphs (cr, glyphs, num_glyphs);
-        }
-        y = y + 18.0;
-
-    }
-    cairo_glyph_free (glyphs);
-    cairo_scaled_font_destroy (scaled_font);
-    return TRUE;
-}
-
-
-GHWPPage* ghwp_page_construct (GType object_type) {
-    return (GHWPPage*) g_object_new (object_type, NULL);
-}
-
-
-GHWPPage* ghwp_page_new (void) {
-	return ghwp_page_construct (GHWP_TYPE_PAGE);
-}
-
-
-static void ghwp_page_class_init (GHWPPageClass * klass) {
-	ghwp_page_parent_class = g_type_class_peek_parent (klass);
-	G_OBJECT_CLASS (klass)->finalize = ghwp_page_finalize;
-}
-
-
-static void ghwp_page_instance_init (GHWPPage * self) {
-    self->elements = g_array_new (TRUE, TRUE, sizeof (GObject*));
-}
-
-
-static void ghwp_page_finalize (GObject* obj) {
-	GHWPPage * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, GHWP_TYPE_PAGE, GHWPPage);
-	_g_array_free0 (self->elements);
-	G_OBJECT_CLASS (ghwp_page_parent_class)->finalize (obj);
-}
-
-
-GType ghwp_page_get_type (void) {
-	static volatile gsize ghwp_page_type_id__volatile = 0;
-	if (g_once_init_enter (&ghwp_page_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (GHWPPageClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) ghwp_page_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (GHWPPage), 0, (GInstanceInitFunc) ghwp_page_instance_init, NULL };
-		GType ghwp_page_type_id;
-		ghwp_page_type_id = g_type_register_static (G_TYPE_OBJECT, "GHWPPage", &g_define_type_info, 0);
-		g_once_init_leave (&ghwp_page_type_id__volatile, ghwp_page_type_id);
-	}
-	return ghwp_page_type_id__volatile;
 }
