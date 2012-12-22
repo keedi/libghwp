@@ -22,7 +22,6 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <gsf/gsf-input-impl.h>
 #include <glib-object.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,33 +30,23 @@
 #include <math.h>
 #include <cairo.h>
 
+#include "gsf-input-stream.h"
+
 G_BEGIN_DECLS
 
+#define GHWP_TYPE_GHWP_FILE (ghwp_file_get_type ())
+#define GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_GHWP_FILE, GHWPFile))
+#define GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
+#define GHWP_IS_FILE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_GHWP_FILE))
+#define GHWP_IS_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_GHWP_FILE))
+#define GHWP_FILE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_GHWP_FILE, GHWPFileClass))
 
-#define TYPE_GSF_INPUT_STREAM (gsf_input_stream_get_type ())
-#define GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStream))
-#define GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
-#define IS_GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_GSF_INPUT_STREAM))
-#define IS_GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_GSF_INPUT_STREAM))
-#define GSF_INPUT_STREAM_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
+typedef struct _GHWPFile GHWPFile;
+typedef struct _GHWPFileClass GHWPFileClass;
+typedef struct _GHWPFilePrivate GHWPFilePrivate;
 
-typedef struct _GsfInputStream GsfInputStream;
-typedef struct _GsfInputStreamClass GsfInputStreamClass;
-typedef struct _GsfInputStreamPrivate GsfInputStreamPrivate;
-
-#define GHWP_TYPE_GHWP_FILE (ghwp_ghwp_file_get_type ())
-#define GHWP_GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_GHWP_FILE, GHWPGHWPFile))
-#define GHWP_GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_GHWP_FILE, GHWPGHWPFileClass))
-#define GHWP_IS_GHWP_FILE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_GHWP_FILE))
-#define GHWP_IS_GHWP_FILE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_GHWP_FILE))
-#define GHWP_GHWP_FILE_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_GHWP_FILE, GHWPGHWPFileClass))
-
-typedef struct _GHWPGHWPFile GHWPGHWPFile;
-typedef struct _GHWPGHWPFileClass GHWPGHWPFileClass;
-typedef struct _GHWPGHWPFilePrivate GHWPGHWPFilePrivate;
-
-#define GHWP_GHWP_FILE_TYPE_HEADER (ghwp_ghwp_file_header_get_type ())
-typedef struct _GHWPGHWPFileHeader GHWPGHWPFileHeader;
+#define GHWP_FILE_TYPE_HEADER (ghwp_file_header_get_type ())
+typedef struct _GHWPFileHeader GHWPFileHeader;
 
 #define TYPE_TEXT_P (text_p_get_type ())
 #define TEXT_P(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_TEXT_P, TextP))
@@ -114,16 +103,8 @@ typedef struct _GHWPContext GHWPContext;
 typedef struct _GHWPContextClass GHWPContextClass;
 typedef struct _GHWPContextPrivate GHWPContextPrivate;
 
-struct _GsfInputStream {
-	GInputStream parent_instance;
-	GsfInputStreamPrivate * priv;
-};
 
-struct _GsfInputStreamClass {
-	GInputStreamClass parent_class;
-};
-
-struct _GHWPGHWPFileHeader {
+struct _GHWPFileHeader {
 	gchar* signature;
 	guint32 version;
 	gboolean is_compress;
@@ -140,10 +121,10 @@ struct _GHWPGHWPFileHeader {
 	gboolean is_ccl;
 };
 
-struct _GHWPGHWPFile {
+struct _GHWPFile {
 	GObject parent_instance;
-	GHWPGHWPFilePrivate * priv;
-	GHWPGHWPFileHeader header;
+	GHWPFilePrivate * priv;
+	GHWPFileHeader header;
 	GInputStream* prv_text_stream;
 	GInputStream* prv_image_stream;
 	GInputStream* file_header_stream;
@@ -152,7 +133,7 @@ struct _GHWPGHWPFile {
 	GInputStream* summary_info_stream;
 };
 
-struct _GHWPGHWPFileClass {
+struct _GHWPFileClass {
 	GObjectClass parent_class;
 };
 
@@ -179,7 +160,7 @@ struct _TextSpanClass {
 struct _GHWPDocument {
 	GObject parent_instance;
 	GHWPDocumentPrivate * priv;
-	GHWPGHWPFile* ghwp_file;
+	GHWPFile* ghwp_file;
 	gchar* prv_text;
 	GArray* office_text;
 	GArray* pages;
@@ -214,23 +195,18 @@ struct _GHWPContextClass {
 	GObjectClass parent_class;
 };
 
-
-GType gsf_input_stream_get_type (void) G_GNUC_CONST;
-GsfInputStream* gsf_input_stream_new (GsfInput* input);
-GsfInputStream* gsf_input_stream_construct (GType object_type, GsfInput* input);
-gssize gsf_input_stream_size (GsfInputStream* self);
-GType ghwp_ghwp_file_get_type (void) G_GNUC_CONST;
-GType ghwp_ghwp_file_header_get_type (void) G_GNUC_CONST;
-GHWPGHWPFileHeader* ghwp_ghwp_file_header_dup (const GHWPGHWPFileHeader* self);
-void ghwp_ghwp_file_header_free (GHWPGHWPFileHeader* self);
-void ghwp_ghwp_file_header_copy (const GHWPGHWPFileHeader* self, GHWPGHWPFileHeader* dest);
-void ghwp_ghwp_file_header_destroy (GHWPGHWPFileHeader* self);
-GHWPGHWPFile* ghwp_ghwp_file_new_from_uri (const gchar* uri, GError** error);
-GHWPGHWPFile* ghwp_ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GError** error);
-GHWPGHWPFile* ghwp_ghwp_file_new_from_filename (const gchar* filename, GError** error);
-GHWPGHWPFile* ghwp_ghwp_file_construct_from_filename (GType object_type, const gchar* filename, GError** error);
-GHWPGHWPFile* ghwp_ghwp_file_new (void);
-GHWPGHWPFile* ghwp_ghwp_file_construct (GType object_type);
+GType ghwp_file_get_type (void) G_GNUC_CONST;
+GType ghwp_file_header_get_type (void) G_GNUC_CONST;
+GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self);
+void ghwp_file_header_free (GHWPFileHeader* self);
+void ghwp_file_header_copy (const GHWPFileHeader* self, GHWPFileHeader* dest);
+void ghwp_file_header_destroy (GHWPFileHeader* self);
+GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error);
+GHWPFile* ghwp_file_construct_from_uri (GType object_type, const gchar* uri, GError** error);
+GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error);
+GHWPFile* ghwp_file_construct_from_filename (GType object_type, const gchar* filename, GError** error);
+GHWPFile* ghwp_file_new (void);
+GHWPFile* ghwp_file_construct (GType object_type);
 GType text_p_get_type (void) G_GNUC_CONST;
 GType text_span_get_type (void) G_GNUC_CONST;
 void text_p_add_textspan (TextP* self, TextSpan* textspan);

@@ -19,7 +19,8 @@ libghwp_la_SOURCES = \
 	ghwp-document.c \
 	ghwp-file.c \
 	ghwp-parse.c \
-	ghwp-tags.c
+	ghwp-tags.c \
+	gsf-input-stream.c
 
 libghwp_la_LDFLAGS = 
 
@@ -28,7 +29,8 @@ libghwp_la_LIBADD = $(LIBGHWP_LIBS)
 ghwpincludedir = $(includedir)/ghwp
 
 ghwpinclude_HEADERS = \
-	ghwp.h
+	ghwp.h \
+	gsf-input-stream.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ghwp-0.1.pc

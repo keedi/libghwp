@@ -31,17 +31,8 @@
 #include <gsf/gsf-infile-impl.h>
 #include <stdio.h>
 
+#include "gsf-input-stream.h"
 
-#define TYPE_GSF_INPUT_STREAM (gsf_input_stream_get_type ())
-#define GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStream))
-#define GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
-#define IS_GSF_INPUT_STREAM(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_GSF_INPUT_STREAM))
-#define IS_GSF_INPUT_STREAM_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_GSF_INPUT_STREAM))
-#define GSF_INPUT_STREAM_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_GSF_INPUT_STREAM, GsfInputStreamClass))
-
-typedef struct _GsfInputStream GsfInputStream;
-typedef struct _GsfInputStreamClass GsfInputStreamClass;
-typedef struct _GsfInputStreamPrivate GsfInputStreamPrivate;
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
 
 #define GHWP_TYPE_GHWP_FILE (ghwp_file_get_type ())
@@ -61,18 +52,6 @@ typedef struct _GHWPFileHeader GHWPFileHeader;
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 #define _g_free0(var) (var = (g_free (var), NULL))
 
-struct _GsfInputStream {
-	GInputStream parent_instance;
-	GsfInputStreamPrivate * priv;
-};
-
-struct _GsfInputStreamClass {
-	GInputStreamClass parent_class;
-};
-
-struct _GsfInputStreamPrivate {
-	GsfInput* input;
-};
 
 struct _GHWPFileHeader {
 	gchar* signature;
@@ -112,25 +91,8 @@ struct _GHWPFilePrivate {
 	GInputStream* section_stream;
 };
 
-
-static gpointer gsf_input_stream_parent_class = NULL;
 static gpointer ghwp_file_parent_class = NULL;
 
-GType gsf_input_stream_get_type (void) G_GNUC_CONST;
-#define GSF_INPUT_STREAM_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), TYPE_GSF_INPUT_STREAM, GsfInputStreamPrivate))
-enum  {
-	GSF_INPUT_STREAM_DUMMY_PROPERTY
-};
-GsfInputStream* gsf_input_stream_new (GsfInput* input);
-GsfInputStream* gsf_input_stream_construct (GType object_type, GsfInput* input);
-static gssize gsf_input_stream_real_read (GInputStream* base,
-                                          void* buffer,
-                                          gsize buffer_length1,
-                                          GCancellable* cancellable,
-                                          GError** error);
-static gboolean gsf_input_stream_real_close (GInputStream* base, GCancellable* cancellable, GError** error);
-gssize gsf_input_stream_size (GsfInputStream* self);
-static void gsf_input_stream_finalize (GObject* obj);
 GType ghwp_file_get_type (void) G_GNUC_CONST;
 GType ghwp_file_header_get_type (void) G_GNUC_CONST;
 GHWPFileHeader* ghwp_file_header_dup (const GHWPFileHeader* self);
@@ -154,91 +116,6 @@ static void ghwp_file_finalize (GObject* obj);
 
 static gpointer _g_object_ref0 (gpointer self) {
 	return self ? g_object_ref (self) : NULL;
-}
-
-
-GsfInputStream* gsf_input_stream_construct (GType object_type, GsfInput* input) {
-	GsfInputStream * self = NULL;
-	GsfInput* _tmp0_;
-	GsfInput* _tmp1_;
-	g_return_val_if_fail (input != NULL, NULL);
-	self = (GsfInputStream*) g_object_new (object_type, NULL);
-	_tmp0_ = input;
-	_tmp1_ = _g_object_ref0 (_tmp0_);
-	_g_object_unref0 (self->priv->input);
-	self->priv->input = _tmp1_;
-	return self;
-}
-
-
-GsfInputStream* gsf_input_stream_new (GsfInput* input) {
-	return gsf_input_stream_construct (TYPE_GSF_INPUT_STREAM, input);
-}
-
-
-static gssize gsf_input_stream_real_read (GInputStream* base,
-                                          void* buffer,
-                                          gsize buffer_length1,
-                                          GCancellable* cancellable,
-                                          GError** error)
-{
-	GsfInputStream * self = (GsfInputStream*) base;
-	gint64 stamp = gsf_input_remaining (self->priv->input);
-
-	if (gsf_input_remaining (self->priv->input) < ((gint64) buffer_length1)) {
-		gsf_input_read (self->priv->input,
-					    (gsize) gsf_input_remaining (self->priv->input),
-					    buffer);
-	} else {
-		gsf_input_read (self->priv->input, (gsize) buffer_length1, buffer);
-	}
-	return (gssize) (stamp - gsf_input_remaining (self->priv->input));
-}
-
-
-static gboolean gsf_input_stream_real_close (GInputStream* base, GCancellable* cancellable, GError** error) {
-	/* pseudo TRUE */
-	return TRUE;
-}
-
-
-gssize gsf_input_stream_size (GsfInputStream* self) {
-	g_return_val_if_fail (self != NULL, 0L);
-	return (gssize) gsf_input_size (self->priv->input);
-}
-
-
-static void gsf_input_stream_class_init (GsfInputStreamClass * klass) {
-	gsf_input_stream_parent_class = g_type_class_peek_parent (klass);
-	g_type_class_add_private (klass, sizeof (GsfInputStreamPrivate));
-	G_INPUT_STREAM_CLASS (klass)->read_fn = gsf_input_stream_real_read;
-	G_INPUT_STREAM_CLASS (klass)->close_fn = gsf_input_stream_real_close;
-	G_OBJECT_CLASS (klass)->finalize = gsf_input_stream_finalize;
-}
-
-
-static void gsf_input_stream_instance_init (GsfInputStream * self) {
-	self->priv = GSF_INPUT_STREAM_GET_PRIVATE (self);
-}
-
-
-static void gsf_input_stream_finalize (GObject* obj) {
-	GsfInputStream * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, TYPE_GSF_INPUT_STREAM, GsfInputStream);
-	_g_object_unref0 (self->priv->input);
-	G_OBJECT_CLASS (gsf_input_stream_parent_class)->finalize (obj);
-}
-
-
-GType gsf_input_stream_get_type (void) {
-	static volatile gsize gsf_input_stream_type_id__volatile = 0;
-	if (g_once_init_enter (&gsf_input_stream_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (GsfInputStreamClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) gsf_input_stream_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (GsfInputStream), 0, (GInstanceInitFunc) gsf_input_stream_instance_init, NULL };
-		GType gsf_input_stream_type_id;
-		gsf_input_stream_type_id = g_type_register_static (G_TYPE_INPUT_STREAM, "GsfInputStream", &g_define_type_info, 0);
-		g_once_init_leave (&gsf_input_stream_type_id__volatile, gsf_input_stream_type_id);
-	}
-	return gsf_input_stream_type_id__volatile;
 }
 
 
@@ -796,7 +673,7 @@ static void ghwp_file_decode_file_header (GHWPFile* self) {
 	GError * _inner_error_ = NULL;
 	g_return_if_fail (self != NULL);
 	_tmp0_ = self->file_header_stream;
-	_tmp1_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp0_, TYPE_GSF_INPUT_STREAM, GsfInputStream));
+	_tmp1_ = _g_object_ref0 (G_TYPE_CHECK_INSTANCE_CAST (_tmp0_, GSF_TYPE_INPUT_STREAM, GsfInputStream));
 	gis = _tmp1_;
 	_tmp2_ = gsf_input_stream_size (gis);
 	size = _tmp2_;
@@ -1026,6 +903,3 @@ GType ghwp_file_get_type (void) {
 	}
 	return ghwp_file_type_id__volatile;
 }
-
-
-
