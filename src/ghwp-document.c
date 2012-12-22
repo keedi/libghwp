@@ -467,14 +467,8 @@ static void ghwp_document_init (GHWPDocument* self) {
 
 
 guint ghwp_document_get_n_pages (GHWPDocument* self) {
-	guint result = 0U;
-	GArray* _tmp0_;
-	guint _tmp1_;
-	g_return_val_if_fail (self != NULL, 0U);
-	_tmp0_ = self->pages;
-	_tmp1_ = _tmp0_->len;
-	result = _tmp1_;
-	return result;
+    g_return_val_if_fail (self != NULL, 0U);
+    return self->pages->len;
 }
 
 
@@ -1301,38 +1295,23 @@ GType ghwp_document_get_type (void) {
 }
 
 
-void ghwp_page_get_size (GHWPPage* self, gdouble* width, gdouble* height) {
-	gdouble _vala_width = 0.0;
-	gdouble _vala_height = 0.0;
-	g_return_if_fail (self != NULL);
-	_vala_width = 595.0;
-	_vala_height = 842.0;
-	if (width) {
-		*width = _vala_width;
-	}
-	if (height) {
-		*height = _vala_height;
-	}
+void ghwp_page_get_size (GHWPPage* self,
+                         gdouble*  width,
+                         gdouble*  height)
+{
+    g_return_if_fail (self != NULL);
+    *width  = 595.0;
+    *height = 842.0;
 }
 
 
 gboolean ghwp_page_render (GHWPPage* self, cairo_t* cr) {
-	gboolean result = FALSE;
-	cairo_t* _tmp0_;
-	cairo_t* _tmp1_;
-	GArray* _tmp2_;
-	cairo_t* _tmp3_;
-	g_return_val_if_fail (self != NULL, FALSE);
-	g_return_val_if_fail (cr != NULL, FALSE);
-	_tmp0_ = cr;
-	cairo_save (_tmp0_);
-	_tmp1_ = cr;
-	_tmp2_ = self->elements;
-	ghwp_page_draw_page (_tmp1_, _tmp2_);
-	_tmp3_ = cr;
-	cairo_restore (_tmp3_);
-	result = TRUE;
-	return result;
+    g_return_val_if_fail (self != NULL, FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    cairo_save (cr);
+    ghwp_page_draw_page (cr, self->elements);
+    cairo_restore (cr);
+    return TRUE;
 }
 
 
@@ -1341,46 +1320,46 @@ gboolean ghwp_page_render (GHWPPage* self, cairo_t* cr) {
 #include FT_FREETYPE_H
 
 static FT_Library ft_lib;
-
-/*한 번만 초기화*/
+static FT_Face    ft_face;
+/*한 번만 초기화, 로드*/
 static void
-init_ft_lib (void)
+once_ft_init_and_new (void)
 {
     static gsize ft_init = 0;
 
     if (g_once_init_enter (&ft_init)) {
+
         FT_Init_FreeType (&ft_lib);
+        FT_New_Face (ft_lib,
+                    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                     0,
+                    &ft_face);
 
         g_once_init_leave (&ft_init, (gsize)1);
     }
 }
 
 static gboolean ghwp_page_draw_page (cairo_t* cr, GArray* elements) {
-	g_return_val_if_fail (cr != NULL, FALSE);
-	g_return_val_if_fail (elements != NULL, FALSE);
+    g_return_val_if_fail (cr != NULL, FALSE);
+    g_return_val_if_fail (elements != NULL, FALSE);
 
-	gint i, j;
-	TextSpan *textspan;
-	
-    cairo_glyph_t *glyphs = NULL; /* NULL로 지정하면 자동 할당됨 */
-    int num_glyphs;
+    gint      i, j;
+    TextSpan *textspan;
+
+    cairo_glyph_t        *glyphs = NULL; /* NULL로 지정하면 자동 할당됨 */
+    int                   num_glyphs;
     cairo_scaled_font_t  *scaled_font;
     cairo_font_face_t    *font_face;
     cairo_matrix_t        font_matrix;
     cairo_matrix_t        ctm;
     cairo_font_options_t *font_options;
-    FT_Face               ft_face;
     cairo_text_extents_t  extents;
 
     gchar *ch;
-	double x = 20.0;
+    double x = 20.0;
     double y = 40.0;
-	
-    init_ft_lib(); /*한 번만 초기화*/
-    FT_New_Face (ft_lib,
-                "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-                 0,
-                &ft_face);
+
+    once_ft_init_and_new(); /*한 번만 초기화, 로드*/
 
     font_face = cairo_ft_font_face_create_for_ft_face (ft_face, 0);
 
@@ -1396,49 +1375,46 @@ static gboolean ghwp_page_draw_page (cairo_t* cr, GArray* elements) {
     cairo_set_scaled_font(cr, scaled_font); /* 요 문장 없으면 fault 떨어짐 */
     cairo_set_source_rgb (cr, 0.0, 0.0, 0.0);
 
-	for (i = 0; i < elements->len; i++)
-	{
+    for (i = 0; i < elements->len; i++)
+    {
         textspan = g_array_index (elements, TextSpan*, (guint) i);
 
-		x = 20.0;
+        x = 20.0;
 
-		for (j = 0; j < g_utf8_strlen(textspan->text, -1); j++) {
-			ch = g_utf8_substring(textspan->text, j, j+1);
+        for (j = 0; j < g_utf8_strlen(textspan->text, -1); j++) {
+            ch = g_utf8_substring(textspan->text, j, j+1);
 
             cairo_scaled_font_text_to_glyphs (scaled_font,
                                               x, y, /* x, y 좌표 */
                                               ch, -1,
                                              &glyphs, &num_glyphs,
                                               NULL, NULL, NULL);
-			g_free(ch);
+            g_free(ch);
             cairo_glyph_extents(cr, glyphs, num_glyphs, &extents);
 
-		    if (x >= 595.0 - extents.x_advance - 20.0) {
-			    glyphs[0].x = 20.0;
-			    glyphs[0].y += 16.0;
-		        x = 20.0 + extents.x_advance;
-    		    y = y + 16.0;
-		    }
-		    else {
-    		    x = x + extents.x_advance;
-		    }
+            if (x >= 595.0 - extents.x_advance - 20.0) {
+                glyphs[0].x = 20.0;
+                glyphs[0].y += 16.0;
+                x = 20.0 + extents.x_advance;
+                y = y + 16.0;
+            }
+            else {
+                x = x + extents.x_advance;
+            }
 
             cairo_show_glyphs (cr, glyphs, num_glyphs);
         }
         y = y + 18.0;
 
-	}
+    }
     cairo_glyph_free (glyphs);
     cairo_scaled_font_destroy (scaled_font);
-	FT_Done_Face(ft_face);
-	return TRUE;
+    return TRUE;
 }
 
 
 GHWPPage* ghwp_page_construct (GType object_type) {
-	GHWPPage * self = NULL;
-	self = (GHWPPage*) g_object_new (object_type, NULL);
-	return self;
+    return (GHWPPage*) g_object_new (object_type, NULL);
 }
 
 
@@ -1454,9 +1430,7 @@ static void ghwp_page_class_init (GHWPPageClass * klass) {
 
 
 static void ghwp_page_instance_init (GHWPPage * self) {
-	GArray* _tmp0_;
-	_tmp0_ = g_array_new (TRUE, TRUE, sizeof (GObject*));
-	self->elements = _tmp0_;
+    self->elements = g_array_new (TRUE, TRUE, sizeof (GObject*));
 }
 
 
@@ -1478,6 +1452,3 @@ GType ghwp_page_get_type (void) {
 	}
 	return ghwp_page_type_id__volatile;
 }
-
-
-
