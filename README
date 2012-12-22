@@ -1,0 +1,9 @@
+libghwp is a GObject based library for handling HWP v5 documents.
+
+INSTALL
+-------
+./autogen.sh
+make
+sudo make install && ldconfig
+
+They are installed in /usr/local/include, /usr/local/lib.

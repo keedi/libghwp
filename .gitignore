@@ -1,0 +1,31 @@
+# anjuta
+.anjuta
+.anjuta_sym_db.db
+libghwp.anjuta
+
+# backup file
+*~
+*.swp
+
+# autotools
+INSTALL
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.*
+configure
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+stamp-h1
+
+# output
+*.la
+*.lo
+.deps
+.libs
+*.pc
+*.o
