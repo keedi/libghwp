@@ -22,81 +22,24 @@
 #include <glib-object.h>
 #include <gio/gio.h>
 
+#include "ghwp-parse.h"
 
-#define GHWP_TYPE_CONTEXT (ghwp_context_get_type ())
-#define GHWP_CONTEXT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_CONTEXT, GHWPContext))
-#define GHWP_CONTEXT_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_CONTEXT, GHWPContextClass))
-#define GHWP_IS_CONTEXT(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_CONTEXT))
-#define GHWP_IS_CONTEXT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_CONTEXT))
-#define GHWP_CONTEXT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_CONTEXT, GHWPContextClass))
+G_DEFINE_TYPE (GHWPContext, ghwp_context, G_TYPE_OBJECT);
 
-typedef struct _GHWPContext GHWPContext;
-typedef struct _GHWPContextClass GHWPContextClass;
-typedef struct _GHWPContextPrivate GHWPContextPrivate;
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 
-struct _GHWPContext {
-	GObject parent_instance;
-	GHWPContextPrivate * priv;
-	guint16 tag_id;
-	guint16 level;
-	guint32 size;
-	guchar* data;
-	gint data_length1;
-};
-
-struct _GHWPContextClass {
-	GObjectClass parent_class;
-};
-
-struct _GHWPContextPrivate {
-	GInputStream* stream;
-	guint32 header;
-	gsize bytes_read;
-	gboolean ret;
-	guchar* buf;
-	gint buf_length1;
-	gint _buf_size_;
-};
-
-
-static gpointer ghwp_context_parent_class = NULL;
-
-GType ghwp_context_get_type (void) G_GNUC_CONST;
 #define GHWP_CONTEXT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), GHWP_TYPE_CONTEXT, GHWPContextPrivate))
-enum  {
-	GHWP_CONTEXT_DUMMY_PROPERTY
-};
-GHWPContext* ghwp_context_new (GInputStream* stream);
-GHWPContext* ghwp_context_construct (GType object_type, GInputStream* stream);
+
 gboolean ghwp_context_decode_header (GHWPContext* self, guchar* buf, int buf_length1);
-gboolean ghwp_context_pull (GHWPContext* self);
-static guchar* _vala_array_dup1 (guchar* self, int length);
 static void ghwp_context_finalize (GObject* obj);
 
-
-static gpointer _g_object_ref0 (gpointer self) {
-	return self ? g_object_ref (self) : NULL;
-}
-
-
-GHWPContext* ghwp_context_construct (GType object_type, GInputStream* stream) {
-	GHWPContext * self = NULL;
-	GInputStream* _tmp0_;
-	GInputStream* _tmp1_;
+GHWPContext* ghwp_context_new (GInputStream* stream)
+{
 	g_return_val_if_fail (stream != NULL, NULL);
-	self = (GHWPContext*) g_object_new (object_type, NULL);
-	_tmp0_ = stream;
-	_tmp1_ = _g_object_ref0 (_tmp0_);
-	_g_object_unref0 (self->priv->stream);
-	self->priv->stream = _tmp1_;
+	GHWPContext *self = (GHWPContext*) g_object_new (GHWP_TYPE_CONTEXT, NULL);
+	self->priv->stream = g_object_ref (stream);
 	return self;
-}
-
-
-GHWPContext* ghwp_context_new (GInputStream* stream) {
-	return ghwp_context_construct (GHWP_TYPE_CONTEXT, stream);
 }
 
 
@@ -192,13 +135,8 @@ gboolean ghwp_context_decode_header (GHWPContext* self, guchar* buf, int buf_len
 	return result;
 }
 
-
-static guchar* _vala_array_dup1 (guchar* self, int length) {
-	return g_memdup (self, length * sizeof (guchar));
-}
-
-
-gboolean ghwp_context_pull (GHWPContext* self) {
+gboolean ghwp_context_pull (GHWPContext* self)
+{
 	gboolean result = FALSE;
 	gsize _tmp4_;
 	guchar* _tmp5_;
@@ -305,7 +243,7 @@ gboolean ghwp_context_pull (GHWPContext* self) {
 	}
 	_tmp15_ = tmp;
 	_tmp15__length1 = tmp_length1;
-	_tmp16_ = (_tmp15_ != NULL) ? _vala_array_dup1 (_tmp15_, _tmp15__length1) : ((gpointer) _tmp15_);
+	_tmp16_ = (_tmp15_ != NULL) ? g_memdup (_tmp15_, _tmp15__length1 * sizeof (guchar)) : ((gpointer) _tmp15_);
 	_tmp16__length1 = _tmp15__length1;
 	self->data = (g_free (self->data), NULL);
 	self->data = _tmp16_;
@@ -323,7 +261,8 @@ static void ghwp_context_class_init (GHWPContextClass * klass) {
 }
 
 
-static void ghwp_context_instance_init (GHWPContext * self) {
+static void ghwp_context_init (GHWPContext * self)
+{
 	guchar* _tmp0_ = NULL;
 	self->priv = GHWP_CONTEXT_GET_PRIVATE (self);
 	_tmp0_ = g_new0 (guchar, 4);
@@ -341,18 +280,3 @@ static void ghwp_context_finalize (GObject* obj) {
 	self->data = (g_free (self->data), NULL);
 	G_OBJECT_CLASS (ghwp_context_parent_class)->finalize (obj);
 }
-
-
-GType ghwp_context_get_type (void) {
-	static volatile gsize ghwp_context_type_id__volatile = 0;
-	if (g_once_init_enter (&ghwp_context_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (GHWPContextClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) ghwp_context_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (GHWPContext), 0, (GInstanceInitFunc) ghwp_context_instance_init, NULL };
-		GType ghwp_context_type_id;
-		ghwp_context_type_id = g_type_register_static (G_TYPE_OBJECT, "GHWPContext", &g_define_type_info, 0);
-		g_once_init_leave (&ghwp_context_type_id__volatile, ghwp_context_type_id);
-	}
-	return ghwp_context_type_id__volatile;
-}
-
-
-

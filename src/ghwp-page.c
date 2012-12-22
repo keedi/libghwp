@@ -143,13 +143,8 @@ static gboolean ghwp_page_draw_page (cairo_t* cr, GArray* elements) {
 }
 
 
-GHWPPage* ghwp_page_construct (GType object_type) {
-    return (GHWPPage*) g_object_new (object_type, NULL);
-}
-
-
 GHWPPage* ghwp_page_new (void) {
-	return ghwp_page_construct (GHWP_TYPE_PAGE);
+	return (GHWPPage*) g_object_new (GHWP_TYPE_PAGE, NULL);
 }
 
 

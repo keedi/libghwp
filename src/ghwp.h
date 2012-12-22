@@ -23,6 +23,7 @@
 #include "ghwp-document.h"
 #include "ghwp-file.h"
 #include "ghwp-page.h"
+#include "ghwp-tags.h"
 #include "gsf-input-stream.h"
 
 #endif /*_GHWP_H_ */

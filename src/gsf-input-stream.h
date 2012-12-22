@@ -51,7 +51,6 @@ struct _GsfInputStreamPrivate {
 
 GType gsf_input_stream_get_type (void) G_GNUC_CONST;
 GsfInputStream* gsf_input_stream_new (GsfInput* input);
-GsfInputStream* gsf_input_stream_construct (GType object_type, GsfInput* input);
 gssize gsf_input_stream_size (GsfInputStream* self);
 
 G_END_DECLS

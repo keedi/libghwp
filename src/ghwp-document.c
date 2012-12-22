@@ -36,9 +36,12 @@
 
 #include "ghwp-document.h"
 #include "gsf-input-stream.h"
+#include "ghwp-parse.h"
+#include "ghwp-tags.h"
 
 G_DEFINE_TYPE (GHWPDocument, ghwp_document, G_TYPE_OBJECT);
 G_DEFINE_TYPE (TextSpan, text_span, G_TYPE_OBJECT);
+G_DEFINE_TYPE (TextP, text_p, G_TYPE_OBJECT);
 
 static void ghwp_document_parse (GHWPDocument* self);
 static void ghwp_document_parse_doc_info (GHWPDocument* self);
@@ -49,89 +52,14 @@ static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* 
 static void ghwp_document_make_pages (GHWPDocument* self);
 static void ghwp_document_finalize (GObject* obj);
 
-#define TYPE_TEXT_P (text_p_get_type ())
-#define TEXT_P(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), TYPE_TEXT_P, TextP))
-#define TEXT_P_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), TYPE_TEXT_P, TextPClass))
-#define IS_TEXT_P(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), TYPE_TEXT_P))
-#define IS_TEXT_P_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), TYPE_TEXT_P))
-#define TEXT_P_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), TYPE_TEXT_P, TextPClass))
+static void text_p_finalize (GObject* obj);
 
-typedef struct _TextP TextP;
-typedef struct _TextPClass TextPClass;
-typedef struct _TextPPrivate TextPPrivate;
+static void text_span_finalize (GObject* obj);
 
 #define _g_array_free0(var) ((var == NULL) ? NULL : (var = (g_array_free (var, TRUE), NULL)))
 #define _g_free0(var) (var = (g_free (var), NULL))
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
-
-#define GHWP_TYPE_CONTEXT (ghwp_context_get_type ())
-#define GHWP_CONTEXT(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GHWP_TYPE_CONTEXT, GHWPContext))
-#define GHWP_CONTEXT_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass), GHWP_TYPE_CONTEXT, GHWPContextClass))
-#define GHWP_IS_CONTEXT(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GHWP_TYPE_CONTEXT))
-#define GHWP_IS_CONTEXT_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GHWP_TYPE_CONTEXT))
-#define GHWP_CONTEXT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GHWP_TYPE_CONTEXT, GHWPContextClass))
-
-typedef struct _GHWPContext GHWPContext;
-typedef struct _GHWPContextClass GHWPContextClass;
-typedef struct _GHWPContextPrivate GHWPContextPrivate;
-
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
-
-struct _TextP {
-	GObject parent_instance;
-	TextPPrivate * priv;
-	GArray* textspans;
-};
-
-struct _TextPClass {
-	GObjectClass parent_class;
-};
-
-struct _GHWPContext {
-	GObject parent_instance;
-	GHWPContextPrivate * priv;
-	guint16 tag_id;
-	guint16 level;
-	guint32 size;
-	guchar* data;
-	gint data_length1;
-};
-
-struct _GHWPContextClass {
-	GObjectClass parent_class;
-};
-
-static gpointer text_p_parent_class = NULL;
-
-GType text_p_get_type (void) G_GNUC_CONST;
-
-enum  {
-	TEXT_P_DUMMY_PROPERTY
-};
-
-void text_p_add_textspan (TextP* self, TextSpan* textspan);
-TextP* text_p_new (void);
-static void text_p_finalize (GObject* obj);
-
-
-static void text_span_finalize (GObject* obj);
-
-GHWPContext* ghwp_context_new (GInputStream* stream);
-GType ghwp_context_get_type (void) G_GNUC_CONST;
-gboolean ghwp_context_pull (GHWPContext* self);
-
-#define GHWP_TAG_PARA_HEADER ((guint16) 66)
-#define GHWP_TAG_PARA_TEXT ((guint16) 67)
-#define GHWP_TAG_PARA_CHAR_SHAPE ((guint16) 68)
-#define GHWP_TAG_PARA_LINE_SEG ((guint16) 69)
-#define GHWP_TAG_CTRL_HEADER ((guint16) 71)
-#define GHWP_TAG_PAGE_DEF ((guint16) 73)
-#define GHWP_TAG_FOOTNOTE_SHAPE ((guint16) 74)
-#define GHWP_TAG_PAGE_BORDER_FILL ((guint16) 75)
-#define GHWP_TAG_LIST_HEADER ((guint16) 72)
-#define GHWP_TAG_EQEDIT ((guint16) 88)
-
-extern const gchar* GHWP_TAG_NAMES[116];
 
 static gpointer _g_object_ref0 (gpointer self) {
 	return self ? g_object_ref (self) : NULL;
@@ -151,67 +79,40 @@ void text_p_add_textspan (TextP* self, TextSpan* textspan) {
 }
 
 
-TextP* text_p_construct (GType object_type) {
-	TextP * self = NULL;
-	self = (TextP*) g_object_new (object_type, NULL);
-	return self;
+TextP* text_p_new (void)
+{
+	return (TextP*) g_object_new (TEXT_TYPE_P, NULL);
 }
 
 
-TextP* text_p_new (void) {
-	return text_p_construct (TYPE_TEXT_P);
-}
-
-
-static void text_p_class_init (TextPClass * klass) {
+static void text_p_class_init (TextPClass * klass)
+{
 	text_p_parent_class = g_type_class_peek_parent (klass);
 	G_OBJECT_CLASS (klass)->finalize = text_p_finalize;
 }
 
 
-static void text_p_instance_init (TextP * self) {
-	GArray* _tmp0_;
-	_tmp0_ = g_array_new (TRUE, TRUE, sizeof (TextSpan*));
-	self->textspans = _tmp0_;
+static void text_p_init (TextP * self)
+{
+	self->textspans = g_array_new (TRUE, TRUE, sizeof (TextSpan*));
 }
 
 
-static void text_p_finalize (GObject* obj) {
-	TextP * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, TYPE_TEXT_P, TextP);
+static void text_p_finalize (GObject* obj)
+{
+	TextP * self = G_TYPE_CHECK_INSTANCE_CAST (obj, TEXT_TYPE_P, TextP);
 	_g_array_free0 (self->textspans);
 	G_OBJECT_CLASS (text_p_parent_class)->finalize (obj);
 }
 
 
-GType text_p_get_type (void) {
-	static volatile gsize text_p_type_id__volatile = 0;
-	if (g_once_init_enter (&text_p_type_id__volatile)) {
-		static const GTypeInfo g_define_type_info = { sizeof (TextPClass), (GBaseInitFunc) NULL, (GBaseFinalizeFunc) NULL, (GClassInitFunc) text_p_class_init, (GClassFinalizeFunc) NULL, NULL, sizeof (TextP), 0, (GInstanceInitFunc) text_p_instance_init, NULL };
-		GType text_p_type_id;
-		text_p_type_id = g_type_register_static (G_TYPE_OBJECT, "TextP", &g_define_type_info, 0);
-		g_once_init_leave (&text_p_type_id__volatile, text_p_type_id);
-	}
-	return text_p_type_id__volatile;
-}
-
-
-TextSpan* text_span_construct (GType object_type, const gchar* text) {
-	TextSpan * self = NULL;
-	const gchar* _tmp0_;
-	gchar* _tmp1_;
+TextSpan* text_span_new (const gchar* text)
+{
 	g_return_val_if_fail (text != NULL, NULL);
-	self = (TextSpan*) g_object_new (object_type, NULL);
-	_tmp0_ = text;
-	_tmp1_ = g_strdup (_tmp0_);
+	TextSpan * self = (TextSpan*) g_object_new (TEXT_TYPE_SPAN, NULL);
 	_g_free0 (self->text);
-	self->text = _tmp1_;
+	self->text = g_strdup (text);
 	return self;
-}
-
-
-TextSpan* text_span_new (const gchar* text) {
-	return text_span_construct (TEXT_TYPE_SPAN, text);
 }
 
 
@@ -226,7 +127,8 @@ static void text_span_init (TextSpan * self)
 }
 
 
-static void text_span_finalize (GObject* obj) {
+static void text_span_finalize (GObject* obj)
+{
 	TextSpan * self;
 	self = G_TYPE_CHECK_INSTANCE_CAST (obj, TEXT_TYPE_SPAN, TextSpan);
 	_g_free0 (self->text);
@@ -234,14 +136,15 @@ static void text_span_finalize (GObject* obj) {
 }
 
 
-GHWPDocument* ghwp_document_construct_from_uri (GType object_type, const gchar* uri, GError** error) {
+GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error)
+{
 	GHWPDocument * self = NULL;
 	const gchar* _tmp0_;
 	GHWPFile* _tmp1_;
 	GHWPFile* _tmp2_;
 	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (uri != NULL, NULL);
-	self = (GHWPDocument*) g_object_new (object_type, NULL);
+	self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT, NULL);
 	_tmp0_ = uri;
 	_tmp1_ = ghwp_file_new_from_uri (_tmp0_, &_inner_error_);
 	_tmp2_ = _tmp1_;
@@ -257,19 +160,16 @@ GHWPDocument* ghwp_document_construct_from_uri (GType object_type, const gchar* 
 }
 
 
-GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error) {
-	return ghwp_document_construct_from_uri (GHWP_TYPE_DOCUMENT, uri, error);
-}
-
-
-GHWPDocument* ghwp_document_construct_from_filename (GType object_type, const gchar* filename, GError** error) {
+GHWPDocument*
+ghwp_document_new_from_filename (const gchar* filename, GError** error)
+{
 	GHWPDocument * self = NULL;
 	const gchar* _tmp0_;
 	GHWPFile* _tmp1_;
 	GHWPFile* _tmp2_;
 	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (filename != NULL, NULL);
-	self = (GHWPDocument*) g_object_new (object_type, NULL);
+	self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT, NULL);
 	_tmp0_ = filename;
 	_tmp1_ = ghwp_file_new_from_filename (_tmp0_, &_inner_error_);
 	_tmp2_ = _tmp1_;
@@ -282,11 +182,6 @@ GHWPDocument* ghwp_document_construct_from_filename (GType object_type, const gc
 	self->ghwp_file = _tmp2_;
 	ghwp_document_parse (self);
 	return self;
-}
-
-
-GHWPDocument* ghwp_document_new_from_filename (const gchar* filename, GError** error) {
-	return ghwp_document_construct_from_filename (GHWP_TYPE_DOCUMENT, filename, error);
 }
 
 
@@ -682,7 +577,7 @@ static void ghwp_document_parse_body_text (GHWPDocument* self) {
 								_tmp49_ = text;
 								_tmp50_ = text_span_new (_tmp49_);
 								_tmp51_ = _tmp50_;
-								text_p_add_textspan (G_TYPE_CHECK_INSTANCE_CAST (_tmp48_, TYPE_TEXT_P, TextP), _tmp51_);
+								text_p_add_textspan (G_TYPE_CHECK_INSTANCE_CAST (_tmp48_, TEXT_TYPE_P, TextP), _tmp51_);
 								_g_object_unref0 (_tmp51_);
 								_g_free0 (text);
 								_g_object_unref0 (textp);
@@ -1077,15 +972,9 @@ static void ghwp_document_parse_summary_info (GHWPDocument* self) {
 }
 
 
-GHWPDocument* ghwp_document_construct (GType object_type) {
-	GHWPDocument * self = NULL;
-	self = (GHWPDocument*) g_object_new (object_type, NULL);
-	return self;
-}
-
-
-GHWPDocument* ghwp_document_new (void) {
-	return ghwp_document_construct (GHWP_TYPE_DOCUMENT);
+GHWPDocument* ghwp_document_new (void)
+{
+	return (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT, NULL);
 }
 
 
