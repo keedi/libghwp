@@ -135,18 +135,15 @@ static void text_span_finalize (GObject* obj)
 GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error)
 {
 	g_return_val_if_fail (uri != NULL, NULL);
-	GError * _inner_error_ = NULL;
-	GHWPDocument * self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT,
-	                                                    NULL);
-	GHWPFile* _tmp2_ = ghwp_file_new_from_uri (uri, &_inner_error_);
+	GHWPFile* file = ghwp_file_new_from_uri (uri, error);
 
-	if (_inner_error_ != NULL) {
-		g_propagate_error (error, _inner_error_);
-		_g_object_unref0 (self);
+	if (file == NULL) {
 		return NULL;
 	}
+
+	GHWPDocument * self = ghwp_document_new();
 	_g_object_unref0 (self->ghwp_file);
-	self->ghwp_file = _tmp2_;
+	self->ghwp_file = file;
 	ghwp_document_parse (self);
 	return self;
 }
@@ -161,7 +158,7 @@ ghwp_document_new_from_filename (const gchar* filename, GError** error)
 	GHWPFile* _tmp2_;
 	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (filename != NULL, NULL);
-	self = (GHWPDocument*) g_object_new (GHWP_TYPE_DOCUMENT, NULL);
+	self = ghwp_document_new();
 	_tmp0_ = filename;
 	_tmp1_ = ghwp_file_new_from_filename (_tmp0_, &_inner_error_);
 	_tmp2_ = _tmp1_;

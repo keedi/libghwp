@@ -60,49 +60,37 @@ static gpointer _g_object_ref0 (gpointer self)
 GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error)
 {
 	g_return_val_if_fail (uri != NULL, NULL);
-	GError * _inner_error_ = NULL;
-	GHWPFile *self = ghwp_file_new();
-	gchar *filename = g_filename_from_uri (uri, NULL, &_inner_error_);
-	if (_inner_error_ != NULL) {
-		g_propagate_error (error, _inner_error_);
-		_g_object_unref0 (self);
+
+	gchar *filename = g_filename_from_uri (uri, NULL, error);
+	if (filename == NULL) {
+	    g_warning("%s:%d: %s\n", __FILE__, __LINE__, (*error)->message);
 		return NULL;
 	}
-	{
-		GsfInputStdio  *input;
-		GsfInfileMSOle *olefile;
-		input = (GsfInputStdio*) gsf_input_stdio_new (filename,
-		                                              &_inner_error_);
-		if (_inner_error_ != NULL) {
-			goto __catch0_g_error;
-		}
-		olefile = (GsfInfileMSOle*) gsf_infile_msole_new ((GsfInput*) input,
-		                                                  &_inner_error_);
-		if (_inner_error_ != NULL) {
-			_g_object_unref0 (input);
-			goto __catch0_g_error;
-		}
-		_g_object_unref0 (self->priv->olefile);
-		self->priv->olefile = olefile;
+
+	GsfInputStdio *input;
+	input = (GsfInputStdio*) gsf_input_stdio_new (filename, error);
+	if (input == NULL) {
+	    g_warning("%s:%d: %s\n", __FILE__, __LINE__, (*error)->message);
+	    _g_free0 (filename);
+	    return NULL;
+	}
+
+	GsfInfileMSOle *olefile;
+	olefile = (GsfInfileMSOle*) gsf_infile_msole_new ((GsfInput*) input,
+	                                                  error);
+	if (olefile == NULL) {
+	    g_warning("%s:%d: %s\n", __FILE__, __LINE__, (*error)->message);
 		_g_object_unref0 (input);
+	    _g_free0 (filename);
+	    return NULL;
 	}
-	goto __finally0;
-	__catch0_g_error:
-	{
-		GError *e = _inner_error_;
-		_inner_error_ = NULL;
-		g_error ("ghwp-file.vala:98: %s", e->message);
-		_g_error_free0 (e);
-	}
-	__finally0:
-	if (_inner_error_ != NULL) {
-		g_propagate_error (error, _inner_error_);
-		_g_free0 (filename);
-		_g_object_unref0 (self);
-		return NULL;
-	}
-	ghwp_file_make_stream (self);
+
+	GHWPFile *self = ghwp_file_new();
+	_g_object_unref0 (self->priv->olefile);
+	self->priv->olefile = olefile;
+	_g_object_unref0 (input);
 	_g_free0 (filename);
+	ghwp_file_make_stream (self);
 	return self;
 }
 
@@ -667,9 +655,9 @@ static void ghwp_file_init (GHWPFile * self) {
 }
 
 
-static void ghwp_file_finalize (GObject* obj) {
-	GHWPFile * self;
-	self = G_TYPE_CHECK_INSTANCE_CAST (obj, GHWP_TYPE_FILE, GHWPFile);
+static void ghwp_file_finalize (GObject* obj)
+{
+	GHWPFile *self = G_TYPE_CHECK_INSTANCE_CAST (obj, GHWP_TYPE_FILE, GHWPFile);
 	_g_object_unref0 (self->priv->olefile);
 	ghwp_file_header_destroy (&self->header);
 	_g_object_unref0 (self->prv_text_stream);
