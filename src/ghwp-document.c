@@ -48,7 +48,11 @@ static void ghwp_document_parse_doc_info (GHWPDocument* self);
 static void ghwp_document_parse_body_text (GHWPDocument* self);
 static void ghwp_document_parse_prv_text (GHWPDocument* self);
 static void ghwp_document_parse_summary_info (GHWPDocument* self);
-static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* raw, int raw_length1);
+
+static gchar*
+ghwp_document_get_text_from_raw_data (GHWPDocument *self,
+                                      guchar       *raw,
+                                      int           raw_len);
 static void ghwp_document_make_pages (GHWPDocument* self);
 static void ghwp_document_finalize (GObject* obj);
 
@@ -61,7 +65,8 @@ static void text_span_finalize (GObject* obj);
 #define _g_object_unref0(var) ((var == NULL) ? NULL : (var = (g_object_unref (var), NULL)))
 #define _g_error_free0(var) ((var == NULL) ? NULL : (var = (g_error_free (var), NULL)))
 
-static gpointer _g_object_ref0 (gpointer self) {
+static gpointer _g_object_ref0 (gpointer self)
+{
 	return self ? g_object_ref (self) : NULL;
 }
 
@@ -135,42 +140,35 @@ static void text_span_finalize (GObject* obj)
 GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error)
 {
 	g_return_val_if_fail (uri != NULL, NULL);
-	GHWPFile* file = ghwp_file_new_from_uri (uri, error);
+	GHWPFile *file = ghwp_file_new_from_uri (uri, error);
 
 	if (file == NULL) {
 		return NULL;
 	}
 
-	GHWPDocument * self = ghwp_document_new();
-	_g_object_unref0 (self->ghwp_file);
-	self->ghwp_file = file;
-	ghwp_document_parse (self);
-	return self;
+	GHWPDocument *doc = ghwp_document_new();
+	_g_object_unref0 (doc->ghwp_file);
+	doc->ghwp_file = file;
+	ghwp_document_parse (doc);
+	return doc;
 }
 
 
 GHWPDocument*
 ghwp_document_new_from_filename (const gchar* filename, GError** error)
 {
-	GHWPDocument * self = NULL;
-	const gchar* _tmp0_;
-	GHWPFile* _tmp1_;
-	GHWPFile* _tmp2_;
-	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (filename != NULL, NULL);
-	self = ghwp_document_new();
-	_tmp0_ = filename;
-	_tmp1_ = ghwp_file_new_from_filename (_tmp0_, &_inner_error_);
-	_tmp2_ = _tmp1_;
-	if (_inner_error_ != NULL) {
-		g_propagate_error (error, _inner_error_);
-		_g_object_unref0 (self);
+	GHWPFile *file = ghwp_file_new_from_filename (filename, error);
+
+	if (file == NULL) {
 		return NULL;
 	}
-	_g_object_unref0 (self->ghwp_file);
-	self->ghwp_file = _tmp2_;
-	ghwp_document_parse (self);
-	return self;
+
+	GHWPDocument *doc = ghwp_document_new();
+	_g_object_unref0 (doc->ghwp_file);
+	doc->ghwp_file = file;
+	ghwp_document_parse (doc);
+	return doc;
 }
 
 
@@ -202,8 +200,8 @@ GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page)
 static void ghwp_document_parse_doc_info (GHWPDocument* self)
 {
 	g_return_if_fail (self != NULL);
-	GInputStream* stream = self->ghwp_file->doc_info_stream;
-	GHWPContext* context = ghwp_context_new (stream);
+	GInputStream* stream  = self->ghwp_file->doc_info_stream;
+	GHWPContext*  context = ghwp_context_new (stream);
 	while (ghwp_context_pull (context)) {
         /* TODO */
 	}
@@ -211,68 +209,40 @@ static void ghwp_document_parse_doc_info (GHWPDocument* self)
 }
 
 
-static gchar* g_unichar_to_string (gunichar self) {
-	gchar* result = NULL;
-	gchar* _tmp0_ = NULL;
-	gchar* str;
-	_tmp0_ = g_new0 (gchar, 7);
-	str = (gchar*) _tmp0_;
-	g_unichar_to_utf8 (self, str);
-	result = str;
-	return result;
+static gchar* g_unichar_to_string (gunichar c)
+{
+	gchar* str = (gchar*) g_new0 (gchar, 7);
+	g_unichar_to_utf8 (c, str);
+	return str;
 }
 
 
-static gchar* ghwp_document_get_text_from_raw_data (GHWPDocument* self, guchar* raw, int raw_length1) {
+static gchar*
+ghwp_document_get_text_from_raw_data (GHWPDocument *self,
+                                      guchar       *raw,
+                                      int           raw_len)
+{
+	g_return_val_if_fail (self != NULL, NULL);
 	gchar* result = NULL;
 	gunichar ch = 0U;
-	gchar* _tmp0_;
-	gchar* text;
-	g_return_val_if_fail (self != NULL, NULL);
-	_tmp0_ = g_strdup ("");
-	text = _tmp0_;
+	gchar* text = g_strdup("");
 	{
 		gint i;
 		i = 0;
 		{
-			gboolean _tmp1_;
-			_tmp1_ = TRUE;
+			gboolean _tmp1_ = TRUE;
 			while (TRUE) {
-				gboolean _tmp2_;
-				gint _tmp4_;
-				gint _tmp5__length1;
-				guchar* _tmp6_;
-				gint _tmp7_;
-				guchar _tmp8_;
-				guchar* _tmp9_;
-				gint _tmp10_;
-				guchar _tmp11_;
-				gunichar _tmp12_;
-				_tmp2_ = _tmp1_;
-				if (!_tmp2_) {
-					gint _tmp3_;
-					_tmp3_ = i;
-					i = _tmp3_ + 2;
+				if (!_tmp1_) {
+					i = i + 2;
 				}
 				_tmp1_ = FALSE;
-				_tmp4_ = i;
-				_tmp5__length1 = raw_length1;
-				if (!(_tmp4_ < _tmp5__length1)) {
+				if (!(i < raw_len)) {
 					break;
 				}
-				_tmp6_ = raw;
-				_tmp7_ = i;
-				_tmp8_ = _tmp6_[_tmp7_ + 1];
-				_tmp9_ = raw;
-				_tmp10_ = i;
-				_tmp11_ = _tmp9_[_tmp10_];
-				ch = (gunichar) ((_tmp8_ << 8) | _tmp11_);
-				_tmp12_ = ch;
-				switch (_tmp12_) {
+				ch = (gunichar) ((raw[i+1] << 8) | raw[i]);
+				switch (ch) {
 					case 0:
-					{
 						break;
-					}
 					case 1:
 					case 2:
 					case 3:
