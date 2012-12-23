@@ -69,36 +69,29 @@ GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error)
 		return NULL;
 	}
 	{
-		GsfInputStdio* _tmp2_;
-		GsfInputStdio* input;
-		GsfInputStdio* _tmp3_;
-		GsfInfileMSOle* _tmp4_;
-		GsfInfileMSOle* _tmp5_;
-		_tmp2_ = (GsfInputStdio*) gsf_input_stdio_new (filename, &_inner_error_);
-		input = _tmp2_;
+		GsfInputStdio  *input;
+		GsfInfileMSOle *olefile;
+		input = (GsfInputStdio*) gsf_input_stdio_new (filename,
+		                                              &_inner_error_);
 		if (_inner_error_ != NULL) {
 			goto __catch0_g_error;
 		}
-		_tmp3_ = input;
-		_tmp4_ = (GsfInfileMSOle*) gsf_infile_msole_new ((GsfInput*) _tmp3_, &_inner_error_);
-		_tmp5_ = _tmp4_;
+		olefile = (GsfInfileMSOle*) gsf_infile_msole_new ((GsfInput*) input,
+		                                                  &_inner_error_);
 		if (_inner_error_ != NULL) {
 			_g_object_unref0 (input);
 			goto __catch0_g_error;
 		}
 		_g_object_unref0 (self->priv->olefile);
-		self->priv->olefile = _tmp5_;
+		self->priv->olefile = olefile;
 		_g_object_unref0 (input);
 	}
 	goto __finally0;
 	__catch0_g_error:
 	{
-		GError* e = NULL;
-		const gchar* _tmp6_;
-		e = _inner_error_;
+		GError *e = _inner_error_;
 		_inner_error_ = NULL;
-		_tmp6_ = e->message;
-		g_error ("ghwp-file.vala:98: %s", _tmp6_);
+		g_error ("ghwp-file.vala:98: %s", e->message);
 		_g_error_free0 (e);
 	}
 	__finally0:
@@ -154,12 +147,9 @@ GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error)
 	goto __finally1;
 	__catch1_g_error:
 	{
-		GError* e = NULL;
-		const gchar* _tmp10_;
-		e = _inner_error_;
+		GError* e = _inner_error_;
 		_inner_error_ = NULL;
-		_tmp10_ = e->message;
-		g_error ("ghwp-file.vala:112: %s", _tmp10_);
+		g_error ("ghwp-file.vala:112: %s", e->message);
 		_g_error_free0 (e);
 	}
 	__finally1:
@@ -175,20 +165,12 @@ GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error)
 }
 
 
-static void ghwp_file_make_stream (GHWPFile* self) {
-	GsfInfileMSOle* _tmp0_;
-	gint _tmp1_ = 0;
-	gint n_children;
-	gint _tmp2_;
+static void ghwp_file_make_stream (GHWPFile* self)
+{
 	g_return_if_fail (self != NULL);
-	_tmp0_ = self->priv->olefile;
-	_tmp1_ = gsf_infile_num_children ((GsfInfile*) _tmp0_);
-	n_children = _tmp1_;
-	_tmp2_ = n_children;
-	if (_tmp2_ < 1) {
-		FILE* _tmp3_;
-		_tmp3_ = stderr;
-		fprintf (_tmp3_, "invalid hwp file\n");
+	gint n_children = gsf_infile_num_children ((GsfInfile*) self->priv->olefile);
+	if (n_children < 1) {
+		fprintf (stderr, "invalid hwp file\n");
 		return;
 	}
 	{
@@ -255,9 +237,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp20_ = input;
 							_tmp21_ = gsf_infile_num_children (G_TYPE_CHECK_INSTANCE_CAST (_tmp20_, GSF_INFILE_TYPE, GsfInfile));
 							if (_tmp21_ > 0) {
-								FILE* _tmp22_;
-								_tmp22_ = stderr;
-								fprintf (_tmp22_, "invalid\n");
+								fprintf (stderr, "invalid\n");
 							}
 							_tmp23_ = input;
 							_tmp24_ = gsf_input_stream_new (_tmp23_);
@@ -286,9 +266,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp28_ = input;
 							_tmp29_ = gsf_infile_num_children (G_TYPE_CHECK_INSTANCE_CAST (_tmp28_, GSF_INFILE_TYPE, GsfInfile));
 							if (_tmp29_ > 0) {
-								FILE* _tmp30_;
-								_tmp30_ = stderr;
-								fprintf (_tmp30_, "invalid\n");
+								fprintf (stderr, "invalid\n");
 							}
 							_tmp31_ = input;
 							_tmp32_ = gsf_input_stream_new (_tmp31_);
@@ -317,9 +295,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp36_ = input;
 							_tmp37_ = gsf_infile_num_children (G_TYPE_CHECK_INSTANCE_CAST (_tmp36_, GSF_INFILE_TYPE, GsfInfile));
 							if (_tmp37_ > 0) {
-								FILE* _tmp38_;
-								_tmp38_ = stderr;
-								fprintf (_tmp38_, "invalid\n");
+								fprintf (stderr, "invalid\n");
 							}
 							_tmp39_ = input;
 							_tmp40_ = gsf_input_stream_new (_tmp39_);
@@ -349,9 +325,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp44_ = input;
 							_tmp45_ = gsf_infile_num_children (G_TYPE_CHECK_INSTANCE_CAST (_tmp44_, GSF_INFILE_TYPE, GsfInfile));
 							if (_tmp45_ > 0) {
-								FILE* _tmp46_;
-								_tmp46_ = stderr;
-								fprintf (_tmp46_, "invalid\n");
+								fprintf (stderr, "invalid\n");
 							}
 							_tmp47_ = self->header;
 							_tmp48_ = _tmp47_.is_compress;
@@ -411,9 +385,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp62_ = infile;
 							_tmp63_ = gsf_infile_num_children (_tmp62_);
 							if (_tmp63_ == 0) {
-								FILE* _tmp64_;
-								_tmp64_ = stderr;
-								fprintf (_tmp64_, "nothing in BodyText\n");
+								fprintf (stderr, "nothing in BodyText\n");
 							}
 							{
 								gint j;
@@ -459,9 +431,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 										_tmp75_ = section;
 										_tmp76_ = gsf_infile_num_children (_tmp75_);
 										if (_tmp76_ > 0) {
-											FILE* _tmp77_;
-											_tmp77_ = stderr;
-											fprintf (_tmp77_, "invalid section\n");
+											fprintf (stderr, "invalid section\n");
 										}
 										_tmp78_ = self->header;
 										_tmp79_ = _tmp78_.is_compress;
@@ -525,9 +495,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 							_tmp94_ = input;
 							_tmp95_ = gsf_infile_num_children (G_TYPE_CHECK_INSTANCE_CAST (_tmp94_, GSF_INFILE_TYPE, GsfInfile));
 							if (_tmp95_ > 0) {
-								FILE* _tmp96_;
-								_tmp96_ = stderr;
-								fprintf (_tmp96_, "invalid\n");
+								fprintf (stderr, "invalid\n");
 							}
 							_tmp97_ = input;
 							_tmp98_ = gsf_input_stream_new (_tmp97_);
@@ -541,11 +509,7 @@ static void ghwp_file_make_stream (GHWPFile* self) {
 					switch (0) {
 						default:
 						{
-							FILE* _tmp99_;
-							const gchar* _tmp100_;
-							_tmp99_ = stderr;
-							_tmp100_ = name;
-							fprintf (_tmp99_, "not implemented error: %s\n", _tmp100_);
+							fprintf (stderr, "not implemented error: %s\n", name);
 							break;
 						}
 					}
