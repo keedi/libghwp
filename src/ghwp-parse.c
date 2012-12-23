@@ -161,7 +161,7 @@ gboolean ghwp_context_pull (GHWPContext* self)
 		gsize _tmp2_ = 0UL;
 		_tmp0_ = self->priv->stream;
 		_tmp1_ = self->priv->buf;
-		_tmp1__length1 = self->priv->buf_length1;
+		_tmp1__length1 = self->priv->buf_len;
 		g_input_stream_read_all (_tmp0_, (void*) _tmp1_, (gsize) _tmp1__length1, &_tmp2_, NULL, &_inner_error_);
 		self->priv->bytes_read = _tmp2_;
 		if (_inner_error_ != NULL) {
@@ -191,7 +191,7 @@ gboolean ghwp_context_pull (GHWPContext* self)
 		return result;
 	}
 	_tmp5_ = self->priv->buf;
-	_tmp5__length1 = self->priv->buf_length1;
+	_tmp5__length1 = self->priv->buf_len;
 	_tmp6_ = ghwp_context_decode_header (self, _tmp5_, _tmp5__length1);
 	self->priv->ret = _tmp6_;
 	_tmp7_ = self->priv->ret;
@@ -247,7 +247,7 @@ gboolean ghwp_context_pull (GHWPContext* self)
 	_tmp16__length1 = _tmp15__length1;
 	self->data = (g_free (self->data), NULL);
 	self->data = _tmp16_;
-	self->data_length1 = _tmp16__length1;
+	self->data_len = _tmp16__length1;
 	result = TRUE;
 	tmp = (g_free (tmp), NULL);
 	return result;
@@ -263,12 +263,9 @@ static void ghwp_context_class_init (GHWPContextClass * klass) {
 
 static void ghwp_context_init (GHWPContext * self)
 {
-	guchar* _tmp0_ = NULL;
-	self->priv = GHWP_CONTEXT_GET_PRIVATE (self);
-	_tmp0_ = g_new0 (guchar, 4);
-	self->priv->buf = _tmp0_;
-	self->priv->buf_length1 = 4;
-	self->priv->_buf_size_ = self->priv->buf_length1;
+    self->priv = GHWP_CONTEXT_GET_PRIVATE (self);
+    self->priv->buf = g_new0 (guchar, 4);
+    self->priv->buf_len = 4;
 }
 
 

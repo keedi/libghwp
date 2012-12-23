@@ -42,7 +42,7 @@ struct _GHWPContext {
 	guint16 level;
 	guint32 size;
 	guchar* data;
-	gint data_length1;
+	gint data_len;
 };
 
 struct _GHWPContextClass {
@@ -55,8 +55,7 @@ struct _GHWPContextPrivate {
 	gsize bytes_read;
 	gboolean ret;
 	guchar* buf;
-	gint buf_length1;
-	gint _buf_size_;
+	gint buf_len;
 };
 
 GType ghwp_context_get_type (void) G_GNUC_CONST;
