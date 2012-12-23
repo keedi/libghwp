@@ -59,16 +59,10 @@ static gpointer _g_object_ref0 (gpointer self)
 
 GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error)
 {
-	GHWPFile * self = NULL;
-	const gchar* _tmp0_;
-	gchar* _tmp1_ = NULL;
-	gchar* filename;
-	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (uri != NULL, NULL);
-	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
-	_tmp0_ = uri;
-	_tmp1_ = g_filename_from_uri (_tmp0_, NULL, &_inner_error_);
-	filename = _tmp1_;
+	GError * _inner_error_ = NULL;
+	GHWPFile *self = ghwp_file_new();
+	gchar *filename = g_filename_from_uri (uri, NULL, &_inner_error_);
 	if (_inner_error_ != NULL) {
 		g_propagate_error (error, _inner_error_);
 		_g_object_unref0 (self);
@@ -122,16 +116,10 @@ GHWPFile* ghwp_file_new_from_uri (const gchar* uri, GError** error)
 
 GHWPFile* ghwp_file_new_from_filename (const gchar* filename, GError** error)
 {
-	GHWPFile * self = NULL;
-	const gchar* _tmp0_;
-	GFile* _tmp1_ = NULL;
-	GFile* file;
-	GError * _inner_error_ = NULL;
 	g_return_val_if_fail (filename != NULL, NULL);
-	self = (GHWPFile*) g_object_new (GHWP_TYPE_FILE, NULL);
-	_tmp0_ = filename;
-	_tmp1_ = g_file_new_for_path (_tmp0_);
-	file = _tmp1_;
+	GError *_inner_error_ = NULL;
+	GHWPFile *self = ghwp_file_new();
+	GFile *file = g_file_new_for_path (filename);
 	{
 		GFile* _tmp2_;
 		gchar* _tmp3_ = NULL;
