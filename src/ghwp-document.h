@@ -58,7 +58,7 @@ GHWPDocument* ghwp_document_new (void);
 GHWPDocument* ghwp_document_new_from_uri (const gchar* uri, GError** error);
 GHWPDocument* ghwp_document_new_from_filename (const gchar* filename, GError** error);
 guint ghwp_document_get_n_pages (GHWPDocument* self);
-GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page);
+GHWPPage* ghwp_document_get_page (GHWPDocument *doc, gint n_page);
 
 
 

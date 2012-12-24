@@ -188,11 +188,20 @@ guint ghwp_document_get_n_pages (GHWPDocument* self)
     return self->pages->len;
 }
 
-
-GHWPPage* ghwp_document_get_page (GHWPDocument* self, gint n_page)
+/**
+ * ghwp_document_get_page:
+ * @doc: a #GHWPDocument
+ * @n_page: the index of the page to get
+ *
+ * Returns a #GHWPPage representing the page at index
+ *
+ * Returns: (transfer none): a #GHWPPage
+ *     DO NOT FREE the page.
+ */
+GHWPPage* ghwp_document_get_page (GHWPDocument* doc, gint n_page)
 {
-    g_return_val_if_fail (self != NULL, NULL);
-    GHWPPage* page = g_array_index (self->pages, GHWPPage*, (guint) n_page);
+    g_return_val_if_fail (doc != NULL, NULL);
+    GHWPPage* page = g_array_index (doc->pages, GHWPPage*, (guint) n_page);
     return _g_object_ref0 (page);
 }
 
