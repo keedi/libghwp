@@ -1,0 +1,34 @@
+Source: libghwp
+Priority: optional
+Maintainer: Hodong Kim <cogniti@gmail.com>
+Build-Depends: cdbs (>= 0.4.93),
+               debhelper (>= 9),
+               dh-autoreconf,
+               libcairo2-dev,
+               libfreetype6-dev,
+               libglib2.0-dev,
+               pkg-config
+Standards-Version: 3.9.3
+Section: libs
+Homepage: https://github.com/cogniti/libghwp
+Vcs-Git: git://github.com/cogniti/libghwp.git
+Vcs-Browser: https://github.com/cogniti/libghwp
+
+Package: libghwp-dev
+Section: libdevel
+Architecture: any
+Depends: ${misc:Depends},
+         libghwp (= ${binary:Version}),
+         libcairo2-dev,
+         libglib2.0-dev
+Description: handling and rendering HWP v5 documents (development files)
+ This package contains the development files.
+
+Package: libghwp
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: handling and rendering HWP v5 documents (library)
+ This package contains the library. It is being used by evince to read HWP 
+ documents.

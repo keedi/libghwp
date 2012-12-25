@@ -1,0 +1,15 @@
+libghwp (0.1.1) unstable; urgency=low
+
+  [ Hodong Kim ]
+  * fix memory leak
+  * fix segmentation fault
+  * code cleanup
+
+ -- Hodong Kim <cogniti@gmail.com>  Mon, 24 Dec 2012 00:33:19 +0900
+
+libghwp (0.1) unstable; urgency=low
+
+  [ Hodong Kim ]
+  * render basic text
+
+ -- Hodong Kim <cogniti@gmail.com>  Sat, 22 Dec 2012 09:28:50 +0900
