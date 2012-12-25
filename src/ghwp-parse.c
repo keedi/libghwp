@@ -121,7 +121,7 @@ gboolean ghwp_context_pull (GHWPContext* self)
 
     /* data 가져오기 */
     self->data = (g_free (self->data), NULL);
-    self->data = g_new0 (guchar, self->size);
+    self->data = g_malloc (self->size);
 
     g_input_stream_read_all (self->priv->stream, (void*) self->data,
                              (gsize) self->size, &self->priv->bytes_read,
@@ -156,8 +156,8 @@ static void ghwp_context_class_init (GHWPContextClass * klass) {
 static void ghwp_context_init (GHWPContext * self)
 {
     self->priv = GHWP_CONTEXT_GET_PRIVATE (self);
-    self->priv->buf = g_new0 (guchar, 4);
     self->priv->buf_len = 4;
+    self->priv->buf = g_malloc (self->priv->buf_len);
 }
 
 

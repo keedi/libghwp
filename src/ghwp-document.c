@@ -341,13 +341,14 @@ static void ghwp_document_parse_body_text (GHWPDocument* self)
                         _g_object_unref0 (_textspan_);
                         _g_free0 (text);
                         _g_object_unref0 (textp);
-                        break;
                     }
+                    break;
                 case GHWP_TAG_PARA_CHAR_SHAPE:
                     break;
                 case GHWP_TAG_PARA_LINE_SEG:
                     break;
                 case GHWP_TAG_CTRL_HEADER:
+                    /* TODO */
                     break;
                 case GHWP_TAG_PAGE_DEF:
                     break;
@@ -359,10 +360,40 @@ static void ghwp_document_parse_body_text (GHWPDocument* self)
                     break;
                 case GHWP_TAG_EQEDIT:
                     break;
+                case GHWP_TAG_TABLE:
+                /*
+                         col 0   col 1
+                       +-------+-------+
+                row 0  |  00   |   01  |
+                       +-------+-------+
+                row 1  |  10   |   11  |
+                       +-------+-------+
+                row 2  |  20   |   21  |
+                       +-------+-------+
+
+                <table> ::= { <list-header> <para-header>+ }+
+
+                para-header
+                    ...
+                    ctrl-header (id:tbl)
+                        table: row-span, col-span
+                        list-header (00)
+                        ...
+                        list-header (01)
+                        ...
+                        list-header (10)
+                        ...
+                        list-header (11)
+                        ...
+                        list-header (20)
+                        ...
+                        list-header (21)
+                */
+                    break;
                 default:
                 {
-                    fprintf (stderr, "%s: not implemented\n",
-                             GHWP_TAG_NAMES[context->tag_id]);
+                    g_warning("%s:%d: %s not implemented\n",
+                        __FILE__, __LINE__, GHWP_TAG_NAMES[context->tag_id]);
                     break;
                 }
             }
@@ -428,7 +459,7 @@ static void ghwp_document_parse_prv_text (GHWPDocument* self)
 
     GsfInputStream *gis   = _g_object_ref0 (self->ghwp_file->prv_text_stream);
     gssize          size  = gsf_input_stream_size (gis);
-    guchar         *buf   = g_new0 (guchar, size);
+    guchar         *buf   = g_new (guchar, size);
     GError         *error = NULL;
 
     g_input_stream_read ((GInputStream*) gis, buf, size, NULL, &error);
@@ -465,14 +496,14 @@ static void ghwp_document_parse_summary_info (GHWPDocument* self)
 
     GsfInputStream *gis;
     gssize          size;
-    guchar         *buf;
+    guint8         *buf;
     GsfInputMemory *summary;
     GsfDocMetaData *meta;
     GError         *error = NULL;
 
     gis  = _g_object_ref0 (self->ghwp_file->summary_info_stream);
     size = gsf_input_stream_size (gis);
-    buf  = g_new0 (guchar, size);
+    buf  = g_malloc(size);
 
     g_input_stream_read ((GInputStream*) gis, buf, (gsize) size, NULL, &error);
 

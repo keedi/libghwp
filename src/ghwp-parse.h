@@ -36,26 +36,26 @@ typedef struct _GHWPContextClass GHWPContextClass;
 typedef struct _GHWPContextPrivate GHWPContextPrivate;
 
 struct _GHWPContext {
-	GObject parent_instance;
-	GHWPContextPrivate * priv;
-	guint16 tag_id;
-	guint16 level;
-	guint32 size;
-	guchar* data;
-	gint data_len;
+    GObject             parent_instance;
+    GHWPContextPrivate *priv;
+    guint16             tag_id;
+    guint16             level;
+    guint32             size;
+    guchar*             data;
+    gint                data_len;
 };
 
 struct _GHWPContextClass {
-	GObjectClass parent_class;
+    GObjectClass parent_class;
 };
 
 struct _GHWPContextPrivate {
-	GInputStream* stream;
-	guint32 header;
-	gsize bytes_read;
-	gboolean ret;
-	guchar* buf;
-	gint buf_len;
+    GInputStream* stream;
+    guint32       header;
+    gsize         bytes_read;
+    gboolean      ret;
+    guchar       *buf;
+    gint          buf_len;
 };
 
 GType ghwp_context_get_type (void) G_GNUC_CONST;
