@@ -29,3 +29,24 @@ stamp-h1
 .libs
 *.pc
 *.o
+
+# output files of dpkg-buildpackage
+debian/autoreconf.after
+debian/autoreconf.before
+debian/files
+debian/libghwp-dev.debhelper.log
+debian/libghwp-dev.substvars
+debian/libghwp-dev/
+debian/libghwp.debhelper.log
+debian/libghwp.postinst.debhelper
+debian/libghwp.postrm.debhelper
+debian/libghwp.substvars
+debian/libghwp/
+debian/stamp-autotools
+debian/stamp-autotools-files
+debian/stamp-copyright-check
+debian/stamp-makefile-build
+debian/stamp-makefile-install
+debian/stamp-upstream-cruft
+debian/tmp/
+
