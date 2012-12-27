@@ -531,7 +531,7 @@ static void ghwp_document_parse_summary_info (GHWPDocument* self)
     summary = (GsfInputMemory*) gsf_input_memory_new (buf, size, FALSE);
 
     meta = gsf_doc_meta_data_new ();
-    gsf_msole_metadata_read ((GsfInput*) summary, meta);
+    gsf_doc_meta_data_read_from_msole (meta, (GsfInput*) summary);
 
     _g_object_unref0 (self->summary_info);
     self->summary_info = _g_object_ref0 (meta);
